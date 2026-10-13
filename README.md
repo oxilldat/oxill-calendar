@@ -1,56 +1,56 @@
-# Oxill Calendar — календарь, графики и статусы для Obsidian
+# Oxill Calendar — Obsidian calendar, schedules and status tracker
 
-[English](README_EN.md) · Русский
+English · [Русский](README_RU.md)
 
-**Oxill Calendar** — плагин-календарь для Obsidian с дневными, недельными и месячными заметками, циклическими графиками, цветным планированием и статусами дней. Он подходит для сменной работы, графиков 5/2 и 2/2, планирования личных проектов, тренировок, учёбы, привычек и других повторяющихся дел.
+**Oxill Calendar** is an Obsidian calendar plugin for daily notes, weekly notes, monthly notes, recurring schedules, shift planning, project planning and day status tracking. It is useful for 5/2 and 2/2 work schedules, rotating shifts, personal projects, workouts, study plans, habits and other recurring routines.
 
-Плагин работает локально внутри хранилища Obsidian, не использует телеметрию и не отправляет заметки во внешние сервисы.
+The plugin works locally inside your Obsidian vault. It contains no telemetry and does not send notes or settings to external services.
 
-## Возможности
+## Features
 
-- месячный календарь в боковой панели Obsidian;
-- дневные, недельные и месячные периодические заметки;
-- отдельные папки, форматы имён и шаблоны для каждого типа заметки;
-- до четырёх независимых циклических графиков;
-- последовательные недельные периоды с собственной датой отсчёта;
-- часы по каждому дню недели и пастельный цвет каждого периода;
-- одновременное отображение нескольких графиков цветными секторами;
-- архивирование графиков с сохранением истории календаря;
-- неограниченное количество пользовательских статусов;
-- до трёх цветных статусных точек на одном дне;
-- назначение статусов через контекстное меню даты;
-- русский интерфейс, светлые и тёмные темы, desktop и mobile.
+- monthly calendar in the Obsidian sidebar;
+- daily, weekly and monthly periodic notes;
+- separate folders, filename formats and templates for every note type;
+- up to four independent recurring schedules;
+- ordered weekly periods with an individual start date;
+- hours for every weekday and a pastel color for every period;
+- multiple schedules displayed as colored sectors on the same calendar day;
+- schedule archiving that preserves calendar history;
+- unlimited custom statuses;
+- up to three colored status dots on each day;
+- status assignment from the date context menu;
+- Russian interface, light and dark themes, desktop and mobile support.
 
-## Примеры использования
+## Use cases
 
-Oxill Calendar можно использовать как календарь смен, календарь рабочих графиков, проектный календарь, трекер статусов, планировщик задач и периодических заметок. Например, отдельными графиками можно показать работу 5/2, тренировки, учёбу и время на личный проект, а статусами отметить готовку, уборку или выполненную тренировку.
+Use Oxill Calendar as an Obsidian shift work calendar, rotating schedule calendar, project calendar, daily status tracker, productivity planner or periodic notes calendar. Separate schedules can represent work, workouts, study and personal projects, while colored statuses can mark cooking, cleaning, training or any completed routine.
 
-## Установка
+## Installation
 
-### Вручную
+### Manual installation
 
-1. Скачайте из последнего [релиза](https://github.com/oxilldat/oxill-calendar/releases/latest) файлы `main.js`, `manifest.json` и `styles.css`.
-2. Создайте папку `<ваше хранилище>/.obsidian/plugins/oxill-calendar/`.
-3. Поместите в неё три скачанных файла.
-4. Перезапустите Obsidian и включите **Oxill Calendar** в разделе **Настройки → Сторонние плагины**.
+1. Download `main.js`, `manifest.json` and `styles.css` from the latest [release](https://github.com/oxilldat/oxill-calendar/releases/latest).
+2. Create `<your vault>/.obsidian/plugins/oxill-calendar/`.
+3. Copy the three downloaded files into that directory.
+4. Restart Obsidian and enable **Oxill Calendar** under **Settings → Community plugins**.
 
-### Через BRAT
+### BRAT installation
 
-Добавьте репозиторий `oxilldat/oxill-calendar` в BRAT и включите Oxill Calendar после установки.
+Add `oxilldat/oxill-calendar` to BRAT, install the plugin and enable it in Obsidian.
 
-## Быстрый старт
+## Quick start
 
-1. Откройте **Настройки → Oxill Calendar**.
-2. Настройте папки и шаблоны периодических заметок.
-3. Создайте график, добавьте периоды и укажите часы по дням недели.
-4. Создайте статусы с нужными названиями и цветами.
-5. Нажмите дату для открытия заметки или используйте ПКМ для назначения статуса.
+1. Open **Settings → Oxill Calendar**.
+2. Configure periodic note folders and templates.
+3. Create a schedule, add periods and enter hours for each weekday.
+4. Create custom statuses with names and colors.
+5. Click a date to open its note or right-click it to assign statuses.
 
-Пустая установка не содержит графиков, статусов или пользовательских данных — всё создаётся только в настройках конкретного хранилища.
+A fresh installation contains no schedules, statuses or user data. Everything is created locally in the settings of the current vault.
 
-## Разработка
+## Development
 
-Требуются Node.js 24+ и npm.
+Node.js 24+ and npm are required.
 
 ```bash
 npm ci
@@ -58,8 +58,6 @@ npm run check
 npm run build
 ```
 
-## Авторство и лицензия
+## Credits and license
 
-Oxill Calendar развивается [Oxill](https://t.me/oxilldat) на основе Calendar 1.5.10 Лиама Кейна. Подробности сохранены в [FORK.md](FORK.md). Код распространяется по лицензии [MIT](LICENSE).
-
-Поддержать разработку: [Boosty](https://boosty.to/oxilldat) · [YouTube](https://www.youtube.com/@oxilldat)
+Oxill Calendar is maintained by [Oxill](https://t.me/oxilldat) and is based on Calendar 1.5.10 by Liam Cain. See [FORK.md](FORK.md) for attribution. The source code is available under the [MIT License](LICENSE).
