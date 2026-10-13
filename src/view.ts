@@ -1,4 +1,4 @@
-import moment, { type Moment } from "moment";
+import type { Moment } from "moment";
 import {
   ItemView,
   Menu,
@@ -9,6 +9,7 @@ import {
 } from "obsidian";
 
 import type OxillCalendarPlugin from "./main";
+import { moment } from "./moment";
 import { getNotePath, openPeriodicNote } from "./notes";
 import { dayScheduleTooltip, getDaySchedule } from "./schedule";
 import type { NoteKind } from "./types";
@@ -122,7 +123,7 @@ export class CalendarView extends ItemView {
           .setTitle(status.name)
           .setIcon("circle")
           .setChecked(isSelected)
-          .onClick(async () => {
+          .onClick(() => {
             const current = this.plugin.settings.dayStatuses[dateKey] ?? [];
             if (current.includes(status.id)) {
               const next = current.filter((id) => id !== status.id);
@@ -135,7 +136,7 @@ export class CalendarView extends ItemView {
               }
               this.plugin.settings.dayStatuses[dateKey] = [...current, status.id];
             }
-            await this.plugin.saveSettings();
+            void this.plugin.saveSettings();
           }));
       });
     }

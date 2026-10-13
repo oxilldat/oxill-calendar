@@ -1,7 +1,7 @@
-import moment from "moment";
 import { Notice, Plugin, type WorkspaceLeaf } from "obsidian";
 
 import { openPeriodicNote } from "./notes";
+import { moment } from "./moment";
 import { OxillCalendarSettingTab } from "./settings";
 import {
   createId,
@@ -12,7 +12,8 @@ import {
 } from "./types";
 import { CALENDAR_VIEW_TYPE, CalendarView } from "./view";
 
-type LegacySettings = Partial<OxillCalendarSettings> & {
+type LegacySettings = Omit<Partial<OxillCalendarSettings>, "schedules"> & {
+  schedules?: LegacySchedule[];
   shouldConfirmBeforeCreate?: boolean;
   weeklyNoteFormat?: string;
   weeklyNoteFolder?: string;
@@ -152,10 +153,6 @@ export default class OxillCalendarPlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => void this.activateView());
   }
 
-  onunload(): void {
-    this.app.workspace.detachLeavesOfType(CALENDAR_VIEW_TYPE);
-  }
-
   async loadSettings(): Promise<void> {
     const raw = (await this.loadData()) as LegacySettings | null;
     const legacyWeekly: Partial<PeriodicNoteSettings> = {
@@ -176,7 +173,7 @@ export default class OxillCalendarPlugin extends Plugin {
       weekly: mergeNoteSettings(DEFAULT_SETTINGS.weekly, raw?.weekly || legacyWeekly),
       monthly: mergeNoteSettings(DEFAULT_SETTINGS.monthly, raw?.monthly),
       schedules: Array.isArray(raw?.schedules)
-        ? migrateSchedules(raw.schedules as unknown as LegacySchedule[])
+        ? migrateSchedules(raw.schedules)
         : [],
       statuses: Array.isArray(raw?.statuses)
         ? raw.statuses.map((status) => ({
@@ -216,6 +213,6 @@ export default class OxillCalendarPlugin extends Plugin {
       if (!leaf) return;
       await leaf.setViewState({ type: CALENDAR_VIEW_TYPE, active: true });
     }
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
   }
 }

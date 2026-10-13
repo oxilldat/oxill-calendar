@@ -1,15 +1,16 @@
-import moment from "moment";
 import {
   Modal,
   Notice,
   PluginSettingTab,
   Setting,
+  type SettingDefinitionItem,
   TFile,
   setIcon
 } from "obsidian";
 
 import type OxillCalendarPlugin from "./main";
 import authorAvatar from "../assets/ava.jpg";
+import { moment } from "./moment";
 import {
   createPeriod,
   createSchedule,
@@ -224,7 +225,16 @@ class ScheduleEditorModal extends Modal {
 
     this.footerEl.empty();
     this.footerEl.createEl("button", { text: "Отмена" }).addEventListener("click", () => this.close());
-    this.footerEl.createEl("button", { cls: "mod-cta", text: "Сохранить" }).addEventListener("click", async () => {
+    this.footerEl.createEl("button", { cls: "mod-cta", text: "Сохранить" }).addEventListener("click", () => {
+      void this.saveDraft();
+    });
+
+    window.requestAnimationFrame(() => {
+      this.contentEl.scrollTop = scrollTop;
+    });
+  }
+
+  private async saveDraft(): Promise<void> {
       if (!this.draft.name.trim() || !moment(this.draft.startDate, "YYYY-MM-DD", true).isValid()) {
         new Notice("Укажите название и корректную дату отсчёта");
         return;
@@ -237,11 +247,6 @@ class ScheduleEditorModal extends Modal {
       await this.plugin.saveSettings();
       this.close();
       this.plugin.settingTab.refreshPreservingScroll();
-    });
-
-    window.requestAnimationFrame(() => {
-      this.contentEl.scrollTop = scrollTop;
-    });
   }
 
   private addHeaderButton(
@@ -327,14 +332,28 @@ class ScheduleEditorModal extends Modal {
 
 export class OxillCalendarSettingTab extends PluginSettingTab {
   private readonly openSections = new Set<string>();
+  private rootEl!: HTMLElement;
 
   constructor(app: OxillCalendarPlugin["app"], private readonly plugin: OxillCalendarPlugin) {
     super(app, plugin);
   }
 
-  display(): void {
-    this.containerEl.empty();
-    this.containerEl.addClass("oxill-calendar-settings");
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [{
+      name: "Oxill Calendar",
+      aliases: ["календарь", "заметки", "графики", "статусы", "шаблоны"],
+      render: (setting) => {
+        setting.settingEl.empty();
+        setting.settingEl.addClass("oxill-calendar-settings-host");
+        this.renderSettings(setting.settingEl);
+      }
+    }];
+  }
+
+  private renderSettings(containerEl: HTMLElement): void {
+    this.rootEl = containerEl;
+    containerEl.empty();
+    containerEl.addClass("oxill-calendar-settings");
 
     const generalGroup = this.createGroup("Основное");
     new Setting(generalGroup)
@@ -342,9 +361,9 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       .setDesc("Показывать запрос перед созданием отсутствующей периодической заметки.")
       .addToggle((toggle) => toggle
         .setValue(this.plugin.settings.confirmBeforeCreate)
-        .onChange(async (value) => {
+        .onChange((value) => {
           this.plugin.settings.confirmBeforeCreate = value;
-          await this.plugin.saveSettings();
+          void this.plugin.saveSettings();
         }));
 
     const notesSection = this.createSection(
@@ -378,22 +397,22 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         .addText((text) => text
           .setPlaceholder("Например, тренировка")
           .setValue(status.name)
-          .onChange(async (value) => {
+          .onChange((value) => {
             status.name = value.trim() || "Без названия";
-            await this.plugin.saveSettings();
+            void this.plugin.saveSettings();
           }))
         .addColorPicker((picker) => picker
           .setValue(status.color)
-          .onChange(async (value) => {
+          .onChange((value) => {
             status.color = value;
             marker.style.backgroundColor = value;
-            await this.plugin.saveSettings();
+            void this.plugin.saveSettings();
           }))
         .addButton((button) => button
           .setIcon("trash-2")
           .setTooltip("Удалить статус")
-          .setWarning()
-          .onClick(async () => {
+          .setDestructive()
+          .onClick(() => {
             this.plugin.settings.statuses = this.plugin.settings.statuses.filter(
               (item) => item.id !== status.id
             );
@@ -404,8 +423,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
                 delete this.plugin.settings.dayStatuses[date];
               }
             });
-            await this.plugin.saveSettings();
-            this.refreshPreservingScroll();
+            void this.saveAndRefresh();
           }));
       const marker = row.nameEl.createSpan({ cls: "oxill-calendar-status-marker" });
       marker.style.backgroundColor = status.color;
@@ -415,10 +433,9 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       .addButton((button) => button
         .setCta()
         .setButtonText("Добавить")
-        .onClick(async () => {
+        .onClick(() => {
           this.plugin.settings.statuses.push(createStatus());
-          await this.plugin.saveSettings();
-          this.refreshPreservingScroll();
+          void this.saveAndRefresh();
         }));
 
     this.renderScheduleSection();
@@ -441,21 +458,19 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           .addButton((button) => button.setButtonText("Изменить").onClick(() => {
             new ScheduleEditorModal(this.plugin, schedule, false).open();
           }))
-          .addButton((button) => button.setButtonText("Восстановить").onClick(async () => {
+          .addButton((button) => button.setButtonText("Восстановить").onClick(() => {
             if (this.plugin.settings.schedules.filter((item) => !item.archivedAt).length >= 4) {
               new Notice("Можно использовать не более четырёх активных графиков");
               return;
             }
             schedule.archivedAt = null;
-            await this.plugin.saveSettings();
-            this.refreshPreservingScroll();
+            void this.saveAndRefresh();
           }))
-          .addButton((button) => button.setWarning().setButtonText("Удалить").onClick(async () => {
+          .addButton((button) => button.setDestructive().setButtonText("Удалить").onClick(() => {
             this.plugin.settings.schedules = this.plugin.settings.schedules.filter(
               (item) => item.id !== schedule.id
             );
-            await this.plugin.saveSettings();
-            this.refreshPreservingScroll();
+            void this.saveAndRefresh();
           }));
       });
     }
@@ -465,7 +480,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
 
   refreshPreservingScroll(): void {
     const scrollableElements: Array<{ element: HTMLElement; scrollTop: number }> = [];
-    let element: HTMLElement | null = this.containerEl;
+    let element: HTMLElement | null = this.rootEl;
     while (element) {
       if (element.scrollHeight > element.clientHeight) {
         scrollableElements.push({ element, scrollTop: element.scrollTop });
@@ -473,12 +488,17 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       element = element.parentElement;
     }
 
-    this.display();
+    this.update();
     window.requestAnimationFrame(() => {
       scrollableElements.forEach(({ element: scrollable, scrollTop }) => {
         scrollable.scrollTop = scrollTop;
       });
     });
+  }
+
+  private async saveAndRefresh(): Promise<void> {
+    await this.plugin.saveSettings();
+    this.refreshPreservingScroll();
   }
 
   private renderScheduleSection(): void {
@@ -504,10 +524,9 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         .addButton((button) => button.setButtonText("Изменить").onClick(() => {
           new ScheduleEditorModal(this.plugin, schedule, false).open();
         }))
-        .addButton((button) => button.setWarning().setButtonText("Архивировать").onClick(async () => {
+        .addButton((button) => button.setDestructive().setButtonText("Архивировать").onClick(() => {
           schedule.archivedAt = moment().format("YYYY-MM-DD");
-          await this.plugin.saveSettings();
-          this.refreshPreservingScroll();
+          void this.saveAndRefresh();
         }));
       const swatches = row.nameEl.createSpan({ cls: "oxill-calendar-schedule-swatches" });
       schedule.periods.forEach((period) => {
@@ -534,7 +553,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
   }
 
   private renderAuthorCard(): void {
-    const card = this.containerEl.createDiv({ cls: "oxill-calendar-author-card" });
+    const card = this.rootEl.createDiv({ cls: "oxill-calendar-author-card" });
     const top = card.createDiv({ cls: "oxill-calendar-author-top" });
     top.createEl("img", {
       cls: "oxill-calendar-author-avatar",
@@ -588,15 +607,15 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     const body = details.createDiv({ cls: "oxill-calendar-note-settings-body" });
 
     new Setting(body).setName("Папка").setDesc("Куда сохранять новые заметки.").addText((text) =>
-      text.setValue(config.folder).onChange(async (value) => {
+      text.setValue(config.folder).onChange((value) => {
         config.folder = value.trim();
-        await this.plugin.saveSettings();
+        void this.plugin.saveSettings();
       })
     );
     new Setting(body).setName("Формат имени").setDesc("Формат Moment.js для имени файла.").addText((text) =>
-      text.setValue(config.format).onChange(async (value) => {
+      text.setValue(config.format).onChange((value) => {
         config.format = value || config.format;
-        await this.plugin.saveSettings();
+        void this.plugin.saveSettings();
       })
     );
     new Setting(body).setName("Шаблон").setDesc("Markdown-файл, который применяется при создании.").addDropdown((dropdown) => {
@@ -604,17 +623,17 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       this.app.vault.getMarkdownFiles()
         .sort((a: TFile, b: TFile) => a.path.localeCompare(b.path, "ru"))
         .forEach((file: TFile) => dropdown.addOption(file.path, file.path));
-      dropdown.setValue(config.template).onChange(async (value) => {
+      dropdown.setValue(config.template).onChange((value) => {
         config.template = value;
-        await this.plugin.saveSettings();
+        void this.plugin.saveSettings();
       });
     });
   }
 
   private createHeading(name: string, description?: string): void {
-    new Setting(this.containerEl).setName(name).setHeading();
+    new Setting(this.rootEl).setName(name).setHeading();
     if (description) {
-      this.containerEl.createDiv({
+      this.rootEl.createDiv({
         cls: "oxill-calendar-section-description",
         text: description
       });
@@ -627,7 +646,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     description: string,
     meta: string
   ): HTMLElement {
-    const details = this.containerEl.createEl("details", {
+    const details = this.rootEl.createEl("details", {
       cls: "oxill-calendar-settings-section"
     });
     details.open = this.openSections.has(key);
@@ -647,6 +666,6 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
 
   private createGroup(name: string, description?: string): HTMLElement {
     this.createHeading(name, description);
-    return this.containerEl.createDiv({ cls: "oxill-calendar-settings-group" });
+    return this.rootEl.createDiv({ cls: "oxill-calendar-settings-group" });
   }
 }

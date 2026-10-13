@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- Migrated settings to the searchable Obsidian 1.13 settings API.
+- Preserved calendar leaf placement when the plugin is disabled or reloaded.
+- Switched to Obsidian's bundled Moment instance.
+- Fixed promise handling, deprecated button APIs and manifest validation.
+- Removed unnecessary CSS `!important` declarations.
+- Added GitHub artifact attestations for release assets.
+
 ## 1.0.0
 
 - Added daily, weekly and monthly periodic notes with individual templates.

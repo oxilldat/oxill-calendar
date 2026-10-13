@@ -1,5 +1,4 @@
-import moment, { type Moment } from "moment";
-import "moment/locale/ru";
+import type { Moment } from "moment";
 import {
   App,
   Modal,
@@ -8,6 +7,8 @@ import {
   TFolder,
   normalizePath
 } from "obsidian";
+
+import { moment } from "./moment";
 
 import type {
   NoteKind,
@@ -119,16 +120,20 @@ class CreateNoteModal extends Modal {
     const buttons = this.contentEl.createDiv({ cls: "oxill-calendar-modal-buttons" });
     buttons.createEl("button", { text: "Отмена" }).addEventListener("click", () => this.close());
     const createButton = buttons.createEl("button", { cls: "mod-cta", text: "Создать" });
-    createButton.addEventListener("click", async () => {
-      createButton.disabled = true;
-      try {
-        await this.onCreate();
-        this.close();
-      } catch (error) {
-        createButton.disabled = false;
-        new Notice(error instanceof Error ? error.message : "Не удалось создать заметку");
-      }
+    createButton.addEventListener("click", () => {
+      void this.create(createButton);
     });
+  }
+
+  private async create(button: HTMLButtonElement): Promise<void> {
+    button.disabled = true;
+    try {
+      await this.onCreate();
+      this.close();
+    } catch (error) {
+      button.disabled = false;
+      new Notice(error instanceof Error ? error.message : "Не удалось создать заметку");
+    }
   }
 
   onClose(): void {

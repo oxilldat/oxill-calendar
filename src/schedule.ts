@@ -1,4 +1,5 @@
-import moment, { type Moment } from "moment";
+import type { Moment } from "moment";
+import { moment } from "./moment";
 
 import type {
   CalendarSchedule,
