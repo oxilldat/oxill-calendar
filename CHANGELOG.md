@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0
+## 1.0.0
 
 - Added daily, weekly and monthly periodic notes with individual templates.
 - Added up to four independent recurring schedules with weekly periods.
