@@ -1,0 +1,859 @@
+.oxill-calendar-view {
+  padding: 10px 12px;
+}
+
+.oxill-calendar-nav {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin: 2px 0 14px;
+}
+
+.oxill-calendar-month {
+  appearance: none;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin: 0;
+  min-height: 30px;
+  padding: 4px 6px;
+}
+
+.oxill-calendar-month:hover {
+  color: var(--interactive-accent);
+}
+
+.oxill-calendar-nav-controls {
+  align-items: center;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  display: flex;
+  gap: 1px;
+  margin-left: auto;
+  padding: 2px;
+}
+
+.oxill-calendar-nav-button,
+.oxill-calendar-today {
+  appearance: none;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 6px;
+  box-shadow: none !important;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-ui-smaller);
+  height: 26px;
+  margin: 0;
+  min-width: 26px;
+  padding: 0 7px;
+}
+
+.oxill-calendar-nav-button {
+  font-size: 1rem;
+  padding: 0;
+}
+
+.oxill-calendar-nav-button:hover,
+.oxill-calendar-today:hover {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}
+
+.oxill-calendar-grid {
+  border-collapse: separate;
+  border-spacing: 3px 4px;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.oxill-calendar-grid th {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0 2px 5px;
+  text-align: center;
+}
+
+.oxill-calendar-grid td {
+  padding: 0;
+  text-align: center;
+}
+
+.oxill-calendar-day,
+.oxill-calendar-week-cell button {
+  appearance: none;
+  align-items: center;
+  border: 0 !important;
+  border-radius: 7px;
+  box-shadow: none !important;
+  color: var(--text-normal);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.78rem;
+  height: 34px;
+  justify-content: center;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+  position: relative;
+  transition: background-color 100ms ease, color 100ms ease, filter 100ms ease;
+  width: 100%;
+}
+
+.oxill-calendar-day:not(.has-work-schedule):not(.has-project-schedule):not(.has-split-schedule),
+.oxill-calendar-week-cell button {
+  background: transparent !important;
+}
+
+.oxill-calendar-week-cell button {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.oxill-calendar-day:not(.has-work-schedule):not(.has-project-schedule):not(.has-split-schedule):hover,
+.oxill-calendar-week-cell button:hover {
+  background: var(--background-modifier-hover) !important;
+}
+
+.oxill-calendar-day.has-work-schedule:hover,
+.oxill-calendar-day.has-project-schedule:hover,
+.oxill-calendar-day.has-split-schedule:hover {
+  filter: brightness(1.1);
+}
+
+.oxill-calendar-day.is-adjacent {
+  opacity: 0.32;
+}
+
+.oxill-calendar-day.is-today {
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px var(--interactive-accent) !important;
+}
+
+.oxill-calendar-status-dots {
+  bottom: 3px;
+  display: flex;
+  gap: 2px;
+  left: 50%;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.oxill-calendar-status-dot,
+.oxill-calendar-status-marker {
+  border: 0;
+  border-radius: 50%;
+  display: inline-block;
+  height: 5px;
+  width: 5px;
+}
+
+.oxill-calendar-status-marker {
+  height: 9px;
+  margin-left: 7px;
+  vertical-align: middle;
+  width: 9px;
+}
+
+.oxill-calendar-author-card {
+  align-items: center;
+  background: var(--background-secondary);
+  border-radius: var(--radius-l, 12px);
+  display: flex;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 12px 14px;
+}
+
+.oxill-calendar-author-top {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 14px;
+  min-width: 0;
+}
+
+.oxill-calendar-author-avatar {
+  border-radius: 50%;
+  flex: 0 0 44px;
+  height: 44px;
+  object-fit: cover;
+  width: 44px;
+}
+
+.oxill-calendar-author-copy {
+  min-width: 0;
+}
+
+.oxill-calendar-author-title {
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  line-height: 1.3;
+}
+
+.oxill-calendar-author-copy p {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.35;
+  margin: 2px 0 0;
+}
+
+.oxill-calendar-social-links {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.oxill-calendar-author-card a.oxill-calendar-social-button {
+  align-items: center;
+  border-radius: 10px;
+  color: #fff;
+  display: flex;
+  height: 34px;
+  justify-content: center;
+  text-decoration: none;
+  transition: filter 120ms ease, opacity 120ms ease;
+  width: 34px;
+}
+
+.oxill-calendar-social-button:hover { filter: brightness(1.12); }
+.oxill-calendar-social-button:active { opacity: 0.82; }
+.oxill-calendar-social-button.is-telegram { background: #229ed9; }
+.oxill-calendar-social-button.is-boosty { background: #f15f2c; }
+.oxill-calendar-social-button.is-youtube { background: #f00; }
+.oxill-calendar-social-button svg { fill: currentColor; height: 19px; width: 19px; }
+
+.oxill-calendar-statuses-group .setting-item {
+  padding-bottom: 9px;
+  padding-top: 9px;
+}
+
+.oxill-calendar-statuses-group input[type="text"] {
+  max-width: 220px;
+}
+
+.oxill-calendar-day.has-work-schedule,
+.oxill-calendar-day.has-project-schedule,
+.oxill-calendar-day.has-split-schedule {
+  color: white;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 65%);
+}
+
+.oxill-calendar-day.is-active,
+.oxill-calendar-week-cell button.is-active {
+  box-shadow: inset 0 0 0 2px var(--interactive-accent) !important;
+}
+
+/* Настройки повторяют общий стиль плагинов Oxill: заголовок секции снаружи,
+   а строки — внутри цельной карточки. */
+.oxill-calendar-settings > .setting-item-heading {
+  margin: 32px 0 8px;
+  padding: 0;
+}
+
+.oxill-calendar-settings > .setting-item-heading:first-child {
+  margin-top: 0;
+}
+
+.oxill-calendar-section-description {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.oxill-calendar-settings-section {
+  background: var(--background-secondary);
+  border-radius: var(--radius-l, 12px);
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.oxill-calendar-settings-section-summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  list-style: none;
+  min-height: 58px;
+  padding: 7px 14px;
+}
+
+.oxill-calendar-settings-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.oxill-calendar-settings-section-summary:hover {
+  background: var(--background-modifier-hover);
+}
+
+.oxill-calendar-settings-section-chevron {
+  color: var(--text-muted);
+  flex: 0 0 auto;
+  font-size: 1.4em;
+  line-height: 1;
+  transition: transform 120ms ease;
+}
+
+.oxill-calendar-settings-section[open] .oxill-calendar-settings-section-chevron {
+  transform: rotate(90deg);
+}
+
+.oxill-calendar-settings-section-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.oxill-calendar-settings-section-title {
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
+}
+
+.oxill-calendar-settings-section-description,
+.oxill-calendar-settings-section-meta {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.oxill-calendar-settings-section-description {
+  margin-top: 2px;
+}
+
+.oxill-calendar-settings-section-meta {
+  flex: 0 0 auto;
+}
+
+.oxill-calendar-settings-section-body {
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 8px;
+}
+
+.oxill-calendar-settings-section-body > .oxill-calendar-settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.oxill-calendar-settings-group,
+.oxill-calendar-period-card {
+  background: var(--background-secondary);
+  border-radius: var(--radius-l, 12px);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.oxill-calendar-settings-group .setting-item,
+.oxill-calendar-period-card .setting-item {
+  align-items: center;
+  background: none;
+  border-radius: 0;
+  border-top: 1px solid var(--background-modifier-border);
+  gap: 24px;
+  margin: 0;
+  min-height: 0;
+  padding: 12px 16px;
+}
+
+.oxill-calendar-settings-group .setting-item:first-child,
+.oxill-calendar-period-card .setting-item:first-of-type {
+  border-top: 0;
+}
+
+.oxill-calendar-settings-group .setting-item-info,
+.oxill-calendar-period-card .setting-item-info {
+  margin-right: 0;
+}
+
+.oxill-calendar-settings-group .setting-item-name,
+.oxill-calendar-period-card .setting-item-name {
+  font-weight: 500;
+}
+
+.oxill-calendar-settings-group .setting-item-description,
+.oxill-calendar-period-card .setting-item-description {
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.oxill-calendar-settings-group .setting-item-control,
+.oxill-calendar-period-card .setting-item-control {
+  flex-shrink: 0;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.oxill-calendar-settings-group select {
+  max-width: min(340px, 42vw);
+  width: auto;
+}
+
+.oxill-calendar-note-settings {
+  margin-bottom: 8px;
+}
+
+.oxill-calendar-note-settings summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  list-style: none;
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.oxill-calendar-note-settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.oxill-calendar-note-settings summary:hover {
+  background: var(--background-modifier-hover);
+}
+
+.oxill-calendar-note-chevron {
+  color: var(--text-muted);
+  display: inline-flex;
+  font-size: 1.4em;
+  line-height: 1;
+  transition: transform 120ms ease;
+}
+
+.oxill-calendar-note-settings[open] .oxill-calendar-note-chevron {
+  transform: rotate(90deg);
+}
+
+.oxill-calendar-note-title {
+  color: var(--text-normal);
+  flex: 1;
+  font-weight: var(--font-semibold);
+}
+
+.oxill-calendar-note-meta {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oxill-calendar-note-settings-body {
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.oxill-calendar-empty-state {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  padding: 16px;
+}
+
+.oxill-calendar-schedule-swatches {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.oxill-calendar-swatch {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 50%;
+  height: 10px;
+  width: 10px;
+}
+
+.oxill-calendar-schedule-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: min(880px, calc(100vh - 32px));
+  max-width: calc(100vw - 32px) !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  width: min(720px, calc(100vw - 32px)) !important;
+}
+
+.oxill-calendar-schedule-modal .modal-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 18px;
+}
+
+.oxill-calendar-modal-intro {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.45;
+  margin: 0 0 14px;
+}
+
+.oxill-calendar-modal-general {
+  margin-bottom: 22px;
+}
+
+.oxill-calendar-form-row {
+  align-items: center;
+  border-top: 1px solid var(--background-modifier-border);
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 240px);
+  min-height: 58px;
+  padding: 10px 14px;
+}
+
+.oxill-calendar-form-row:first-child {
+  border-top: 0;
+}
+
+.oxill-calendar-form-info {
+  min-width: 0;
+}
+
+.oxill-calendar-form-label {
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-weight: 500;
+}
+
+.oxill-calendar-form-description {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.oxill-calendar-form-control {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.oxill-calendar-form-input,
+.oxill-calendar-form-select {
+  margin: 0;
+  max-width: 240px;
+  width: 100%;
+}
+
+.oxill-calendar-form-input[type="number"] {
+  width: 84px;
+}
+
+.oxill-calendar-color-control {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.oxill-calendar-color-input {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  width: 42px;
+}
+
+.oxill-calendar-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.oxill-calendar-color-input::-webkit-color-swatch {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.oxill-calendar-color-control code {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.oxill-calendar-modal-section-heading {
+  align-items: flex-end;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 0 0 8px;
+}
+
+.oxill-calendar-modal-section-title {
+  color: var(--text-normal);
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+}
+
+.oxill-calendar-modal-section-description {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.oxill-calendar-period-card {
+  margin: 8px 0;
+}
+
+.oxill-calendar-period-header {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  min-height: 58px;
+  padding: 8px 10px 8px 14px;
+}
+
+.oxill-calendar-period-header:hover {
+  background: var(--background-modifier-hover);
+}
+
+.oxill-calendar-period-chevron {
+  color: var(--text-muted);
+  display: inline-flex;
+  flex: 0 0 auto;
+  transition: transform 120ms ease;
+}
+
+.oxill-calendar-period-chevron svg {
+  height: 18px;
+  width: 18px;
+}
+
+.oxill-calendar-period-card.is-expanded .oxill-calendar-period-chevron {
+  transform: rotate(90deg);
+}
+
+.oxill-calendar-period-header-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.oxill-calendar-period-header-name {
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oxill-calendar-period-header-meta {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oxill-calendar-period-swatches {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.oxill-calendar-period-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.oxill-calendar-period-header-actions button {
+  align-items: center;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.oxill-calendar-period-header-actions button.is-warning {
+  color: var(--text-error);
+}
+
+.oxill-calendar-period-header-actions button:disabled {
+  opacity: 0.25;
+}
+
+.oxill-calendar-period-body {
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.oxill-calendar-period-subheading {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  padding: 14px 16px 5px;
+  text-transform: uppercase;
+}
+
+.oxill-calendar-period-subheading + .setting-item {
+  border-top: 0;
+}
+
+.oxill-calendar-period-subheading + .oxill-calendar-form-row {
+  border-top: 0;
+}
+
+.oxill-calendar-add-period {
+  background: transparent;
+  border: 1px dashed var(--background-modifier-border);
+  color: var(--text-muted);
+  margin: 8px 0 0;
+  min-height: 42px;
+  width: 100%;
+}
+
+.oxill-calendar-add-period:hover {
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+.oxill-calendar-weekdays {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 12px 16px;
+}
+
+.oxill-calendar-weekdays-label {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.oxill-calendar-weekdays button {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 5px;
+  padding: 4px 8px;
+}
+
+.oxill-calendar-weekdays button.is-selected {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.oxill-calendar-project-hours {
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 12px 16px 16px;
+}
+
+.oxill-calendar-hours-grid {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(7, minmax(44px, 1fr));
+  margin-top: 8px;
+}
+
+.oxill-calendar-hours-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.oxill-calendar-hours-grid label {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  text-align: center;
+}
+
+.oxill-calendar-hours-grid input {
+  min-width: 0;
+  width: 100%;
+}
+
+.oxill-calendar-modal-buttons {
+  background: var(--modal-background, var(--background-primary));
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 14px var(--size-4-5, 20px);
+}
+
+@media (max-width: 600px) {
+  .oxill-calendar-view {
+    padding: 4px;
+  }
+
+  .oxill-calendar-today {
+    display: none;
+  }
+
+  .oxill-calendar-author-card {
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .oxill-calendar-social-links {
+    margin-left: 58px;
+  }
+
+  .oxill-calendar-hours-grid {
+    grid-template-columns: repeat(4, minmax(44px, 1fr));
+  }
+
+  .oxill-calendar-period-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .oxill-calendar-period-header-text {
+    width: calc(100% - 70px);
+  }
+
+  .oxill-calendar-period-header-actions {
+    margin-left: 28px;
+    width: 100%;
+  }
+
+  .oxill-calendar-modal-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .oxill-calendar-form-row {
+    align-items: stretch;
+    gap: 8px;
+    grid-template-columns: 1fr;
+  }
+
+  .oxill-calendar-form-control {
+    justify-content: flex-start;
+  }
+
+  .oxill-calendar-form-input,
+  .oxill-calendar-form-select {
+    max-width: none;
+  }
+
+  .oxill-calendar-settings-group .setting-item,
+  .oxill-calendar-period-card .setting-item {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .oxill-calendar-settings-group .setting-item-control,
+  .oxill-calendar-period-card .setting-item-control {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .oxill-calendar-settings-group select,
+  .oxill-calendar-settings-group input[type="text"] {
+    max-width: none;
+    width: 100%;
+  }
+}

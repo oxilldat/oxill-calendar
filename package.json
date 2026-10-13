@@ -1,0 +1,24 @@
+{
+  "name": "oxill-calendar",
+  "version": "2.0.0",
+  "description": "Obsidian calendar for periodic notes, recurring schedules and day statuses",
+  "repository": "https://github.com/oxilldat/oxill-calendar",
+  "keywords": ["obsidian", "calendar", "daily-notes", "weekly-notes", "schedule", "shift-work", "status-tracker"],
+  "author": "Oxill; based on Calendar by Liam Cain",
+  "main": "main.js",
+  "license": "MIT",
+  "dependencies": {
+    "moment": "2.31.0"
+  },
+  "scripts": {
+    "check": "tsc --noEmit --skipLibCheck",
+    "build": "npm run check && node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "esbuild": "0.28.2",
+    "obsidian": "1.14.4",
+    "typescript": "7.0.2"
+  }
+}
