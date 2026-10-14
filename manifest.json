@@ -2,7 +2,7 @@
   "id": "oxill-calendar",
   "name": "Oxill Calendar",
   "description": "Calendar for periodic notes, recurring schedules and day statuses.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Oxill; based on Calendar by Liam Cain",
   "isDesktopOnly": false,
   "minAppVersion": "1.13.0"

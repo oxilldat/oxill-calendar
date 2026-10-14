@@ -23,6 +23,11 @@ import {
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
+function startOfScheduleWeek(value: string): string {
+  const date = moment(value, "YYYY-MM-DD", true);
+  return date.isValid() ? date.startOf("isoWeek").format("YYYY-MM-DD") : value;
+}
+
 function numberValue(value: string, fallback: number, min: number, max: number): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
@@ -71,6 +76,7 @@ class ScheduleEditorModal extends Modal {
   ) {
     super(plugin.app);
     this.draft = structuredClone(schedule);
+    this.draft.startDate = startOfScheduleWeek(this.draft.startDate);
     const firstPeriod = this.draft.periods[0];
     if (firstPeriod) this.expandedPeriodIds.add(firstPeriod.id);
   }
@@ -104,8 +110,8 @@ class ScheduleEditorModal extends Modal {
     );
     this.addInputField(
       generalCard,
-      "Дата отсчёта",
-      "Первый день первого периода. Каждый период длится одну неделю.",
+      "Начало первой недели",
+      "Расчёт начинается с понедельника выбранной недели.",
       "date",
       this.draft.startDate,
       (value) => { this.draft.startDate = value; }
@@ -239,6 +245,7 @@ class ScheduleEditorModal extends Modal {
         new Notice("Укажите название и корректную дату отсчёта");
         return;
       }
+      this.draft.startDate = startOfScheduleWeek(this.draft.startDate);
       if (this.isNew) this.plugin.settings.schedules.push(this.draft);
       else {
         const index = this.plugin.settings.schedules.findIndex((item) => item.id === this.draft.id);
@@ -454,7 +461,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       archived.forEach((schedule) => {
         new Setting(archiveGroup)
           .setName(schedule.name)
-          .setDesc(`${schedule.startDate} — ${schedule.archivedAt}`)
+          .setDesc(`${startOfScheduleWeek(schedule.startDate)} — ${schedule.archivedAt}`)
           .addButton((button) => button.setButtonText("Изменить").onClick(() => {
             new ScheduleEditorModal(this.plugin, schedule, false).open();
           }))
@@ -520,7 +527,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       const periodNames = schedule.periods.map((period) => period.name).join(" → ");
       const row = new Setting(group)
         .setName(schedule.name)
-        .setDesc(`С ${schedule.startDate} · ${periodNames}`)
+        .setDesc(`С ${startOfScheduleWeek(schedule.startDate)} · ${periodNames}`)
         .addButton((button) => button.setButtonText("Изменить").onClick(() => {
           new ScheduleEditorModal(this.plugin, schedule, false).open();
         }))
@@ -546,7 +553,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           if (active.length >= 4) return;
           new ScheduleEditorModal(
             this.plugin,
-            createSchedule(moment().format("YYYY-MM-DD")),
+            createSchedule(moment().startOf("isoWeek").format("YYYY-MM-DD")),
             true
           ).open();
         }));

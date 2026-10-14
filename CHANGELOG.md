@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Fixed recurring schedule periods switching on the selected weekday instead of Monday.
+- Normalized existing and newly created schedule start dates to calendar weeks.
+- Clarified the schedule start date field in settings.
+
 ## 1.1.0
 
 - Migrated settings to the searchable Obsidian 1.13 settings API.

@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 function containsDate(schedule: CalendarSchedule, date: Moment): boolean {
-  const start = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("day");
+  const start = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("isoWeek");
   if (!start.isValid() || date.isBefore(start, "day")) return false;
   if (!schedule.archivedAt) return true;
   const archivedAt = moment(schedule.archivedAt, "YYYY-MM-DD", true);
@@ -20,7 +20,7 @@ function getOccurrence(
   schedule: CalendarSchedule,
   date: Moment
 ): ScheduleOccurrence | null {
-  const start = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("day");
+  const start = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("isoWeek");
   const elapsedDays = date.clone().startOf("day").diff(start, "days");
   const elapsedWeeks = Math.floor(elapsedDays / 7);
   const period = schedule.periods[elapsedWeeks % schedule.periods.length];
