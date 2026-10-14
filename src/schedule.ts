@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 function containsDate(schedule: CalendarSchedule, date: Moment): boolean {
-  const start = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("isoWeek");
+  const start = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("day");
   if (!start.isValid() || date.isBefore(start, "day")) return false;
   if (!schedule.archivedAt) return true;
   const archivedAt = moment(schedule.archivedAt, "YYYY-MM-DD", true);
@@ -20,9 +20,8 @@ function getOccurrence(
   schedule: CalendarSchedule,
   date: Moment
 ): ScheduleOccurrence | null {
-  const start = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("isoWeek");
-  const elapsedDays = date.clone().startOf("day").diff(start, "days");
-  const elapsedWeeks = Math.floor(elapsedDays / 7);
+  const cycleStart = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("isoWeek");
+  const elapsedWeeks = date.clone().startOf("isoWeek").diff(cycleStart, "weeks");
   const period = schedule.periods[elapsedWeeks % schedule.periods.length];
   const weekday = date.isoWeekday();
 
@@ -46,7 +45,7 @@ export function getDaySchedule(
 export function dayScheduleTooltip(info: DayScheduleInfo): string {
   const parts: string[] = [];
   info.occurrences.forEach((occurrence) => {
-    parts.push(`${occurrence.schedule.name}: ${occurrence.period.name}, ${occurrence.hours} ч`);
+    parts.push(`${occurrence.period.name}, ${occurrence.hours} ч`);
   });
   return parts.join("\n");
 }

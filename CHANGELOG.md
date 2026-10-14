@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0
+
+- Added bulk status assignment across an inclusive date range with a configurable day interval.
+- Added removal of all status assignments or assignments within a selected date range.
+- Made schedule start dates exact while keeping period changes aligned to Mondays.
+- Simplified day tooltips to show period names and hours without schedule names.
+- Improved calendar spacing, schedule text contrast and status-dot outlines.
+
 ## 1.1.1
 
 - Fixed recurring schedule periods switching on the selected weekday instead of Monday.

@@ -7,6 +7,7 @@ import {
   TFile,
   setIcon
 } from "obsidian";
+import type { Moment } from "moment";
 
 import type OxillCalendarPlugin from "./main";
 import authorAvatar from "../assets/ava.jpg";
@@ -23,14 +24,169 @@ import {
 
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
-function startOfScheduleWeek(value: string): string {
-  const date = moment(value, "YYYY-MM-DD", true);
-  return date.isValid() ? date.startOf("isoWeek").format("YYYY-MM-DD") : value;
-}
-
 function numberValue(value: string, fallback: number, min: number, max: number): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function parseDateRange(startValue: string, endValue: string): [Moment, Moment] | null {
+  const start = moment(startValue, "YYYY-MM-DD", true).startOf("day");
+  const end = moment(endValue, "YYYY-MM-DD", true).startOf("day");
+  return start.isValid() && end.isValid() && !end.isBefore(start, "day") ? [start, end] : null;
+}
+
+class StatusPeriodModal extends Modal {
+  private statusId: string;
+  private startDate = moment().format("YYYY-MM-DD");
+  private endDate = moment().format("YYYY-MM-DD");
+  private interval = 1;
+
+  constructor(private readonly plugin: OxillCalendarPlugin) {
+    super(plugin.app);
+    this.statusId = plugin.settings.statuses[0]?.id ?? "";
+  }
+
+  onOpen(): void {
+    this.titleEl.setText("Назначить статус на период");
+    this.contentEl.createEl("p", {
+      cls: "setting-item-description",
+      text: "Статус будет назначен от начальной до конечной даты включительно."
+    });
+    new Setting(this.contentEl).setName("Статус").addDropdown((dropdown) => {
+      this.plugin.settings.statuses.forEach((status) => dropdown.addOption(status.id, status.name));
+      dropdown.setValue(this.statusId).onChange((value) => { this.statusId = value; });
+    });
+    this.addDateSetting("С даты", this.startDate, (value) => { this.startDate = value; });
+    this.addDateSetting("По дату", this.endDate, (value) => { this.endDate = value; });
+    new Setting(this.contentEl)
+      .setName("Интервал")
+      .setDesc("Через сколько дней повторять статус. 1 — каждый день.")
+      .addText((text) => {
+        text.inputEl.type = "number";
+        text.inputEl.min = "1";
+        text.inputEl.step = "1";
+        text.setValue(String(this.interval)).onChange((value) => {
+          this.interval = numberValue(value, 1, 1, 3650);
+        });
+      });
+    new Setting(this.contentEl)
+      .addButton((button) => button.setButtonText("Отмена").onClick(() => this.close()))
+      .addButton((button) => button.setCta().setButtonText("Назначить").onClick(() => {
+        void this.apply();
+      }));
+  }
+
+  private addDateSetting(name: string, value: string, onChange: (value: string) => void): void {
+    new Setting(this.contentEl).setName(name).addText((text) => {
+      text.inputEl.type = "date";
+      text.setValue(value).onChange(onChange);
+    });
+  }
+
+  private async apply(): Promise<void> {
+    const range = parseDateRange(this.startDate, this.endDate);
+    const status = this.plugin.settings.statuses.find((item) => item.id === this.statusId);
+    if (!range || !status) {
+      new Notice("Выберите статус и корректный диапазон дат");
+      return;
+    }
+    const [start, end] = range;
+    const interval = Math.max(1, Math.floor(this.interval));
+    const occurrences = Math.floor(end.diff(start, "days") / interval) + 1;
+    if (occurrences > 10_000) {
+      new Notice("Диапазон слишком большой: максимум 10 000 назначений");
+      return;
+    }
+
+    let added = 0;
+    let skipped = 0;
+    for (const date = start.clone(); !date.isAfter(end, "day"); date.add(interval, "days")) {
+      const key = date.format("YYYY-MM-DD");
+      const current = this.plugin.settings.dayStatuses[key] ?? [];
+      if (current.includes(status.id)) continue;
+      if (current.length >= 3) {
+        skipped += 1;
+        continue;
+      }
+      this.plugin.settings.dayStatuses[key] = [...current, status.id];
+      added += 1;
+    }
+    await this.plugin.saveSettings();
+    this.close();
+    new Notice(skipped > 0
+      ? `Статус назначен: ${added}. Пропущено заполненных дней: ${skipped}`
+      : `Статус назначен: ${added}`);
+  }
+}
+
+class ClearStatusesModal extends Modal {
+  private deletionScope: "all" | "range" = "range";
+  private startDate = moment().startOf("month").format("YYYY-MM-DD");
+  private endDate = moment().endOf("month").format("YYYY-MM-DD");
+
+  constructor(private readonly plugin: OxillCalendarPlugin) {
+    super(plugin.app);
+  }
+
+  onOpen(): void {
+    this.titleEl.setText("Удалить назначения статусов");
+    let startInput: HTMLInputElement;
+    let endInput: HTMLInputElement;
+    new Setting(this.contentEl).setName("Область удаления").addDropdown((dropdown) => dropdown
+      .addOption("range", "Диапазон дат")
+      .addOption("all", "Все даты")
+      .setValue(this.deletionScope)
+      .onChange((value) => {
+        this.deletionScope = value === "all" ? "all" : "range";
+        startInput.disabled = this.deletionScope === "all";
+        endInput.disabled = this.deletionScope === "all";
+      }));
+    new Setting(this.contentEl).setName("С даты").addText((text) => {
+      startInput = text.inputEl;
+      startInput.type = "date";
+      text.setValue(this.startDate).onChange((value) => { this.startDate = value; });
+    });
+    new Setting(this.contentEl).setName("По дату").addText((text) => {
+      endInput = text.inputEl;
+      endInput.type = "date";
+      text.setValue(this.endDate).onChange((value) => { this.endDate = value; });
+    });
+    new Setting(this.contentEl)
+      .setDesc("Удаляются назначения в календаре. Сами статусы и их цвета останутся в настройках.")
+      .addButton((button) => button.setButtonText("Отмена").onClick(() => this.close()))
+      .addButton((button) => button.setDestructive().setButtonText("Удалить").onClick(() => {
+        void this.clear();
+      }));
+  }
+
+  private async clear(): Promise<void> {
+    if (this.deletionScope === "all") {
+      const removed = Object.values(this.plugin.settings.dayStatuses)
+        .reduce((total, ids) => total + ids.length, 0);
+      this.plugin.settings.dayStatuses = {};
+      await this.plugin.saveSettings();
+      this.close();
+      new Notice(`Удалено назначений: ${removed}`);
+      return;
+    }
+
+    const range = parseDateRange(this.startDate, this.endDate);
+    if (!range) {
+      new Notice("Укажите корректный диапазон дат");
+      return;
+    }
+    const [start, end] = range;
+    let removed = 0;
+    Object.keys(this.plugin.settings.dayStatuses).forEach((key) => {
+      const date = moment(key, "YYYY-MM-DD", true);
+      if (!date.isValid() || date.isBefore(start, "day") || date.isAfter(end, "day")) return;
+      removed += this.plugin.settings.dayStatuses[key].length;
+      delete this.plugin.settings.dayStatuses[key];
+    });
+    await this.plugin.saveSettings();
+    this.close();
+    new Notice(`Удалено назначений: ${removed}`);
+  }
 }
 
 function renderDayHours(
@@ -76,7 +232,6 @@ class ScheduleEditorModal extends Modal {
   ) {
     super(plugin.app);
     this.draft = structuredClone(schedule);
-    this.draft.startDate = startOfScheduleWeek(this.draft.startDate);
     const firstPeriod = this.draft.periods[0];
     if (firstPeriod) this.expandedPeriodIds.add(firstPeriod.id);
   }
@@ -110,8 +265,8 @@ class ScheduleEditorModal extends Modal {
     );
     this.addInputField(
       generalCard,
-      "Начало первой недели",
-      "Расчёт начинается с понедельника выбранной недели.",
+      "Дата начала",
+      "До этой даты график не действует. Периоды сменяются по понедельникам.",
       "date",
       this.draft.startDate,
       (value) => { this.draft.startDate = value; }
@@ -245,7 +400,6 @@ class ScheduleEditorModal extends Modal {
         new Notice("Укажите название и корректную дату отсчёта");
         return;
       }
-      this.draft.startDate = startOfScheduleWeek(this.draft.startDate);
       if (this.isNew) this.plugin.settings.schedules.push(this.draft);
       else {
         const index = this.plugin.settings.schedules.findIndex((item) => item.id === this.draft.id);
@@ -444,6 +598,17 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           this.plugin.settings.statuses.push(createStatus());
           void this.saveAndRefresh();
         }));
+    new Setting(statusesGroup)
+      .setName("Массовые действия")
+      .setDesc("Назначить статус по датам или очистить назначения.")
+      .addButton((button) => button
+        .setButtonText("Назначить период")
+        .setDisabled(this.plugin.settings.statuses.length === 0)
+        .onClick(() => new StatusPeriodModal(this.plugin).open()))
+      .addButton((button) => button
+        .setButtonText("Удалить назначения")
+        .setDestructive()
+        .onClick(() => new ClearStatusesModal(this.plugin).open()));
 
     this.renderScheduleSection();
 
@@ -461,7 +626,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       archived.forEach((schedule) => {
         new Setting(archiveGroup)
           .setName(schedule.name)
-          .setDesc(`${startOfScheduleWeek(schedule.startDate)} — ${schedule.archivedAt}`)
+          .setDesc(`${schedule.startDate} — ${schedule.archivedAt}`)
           .addButton((button) => button.setButtonText("Изменить").onClick(() => {
             new ScheduleEditorModal(this.plugin, schedule, false).open();
           }))
@@ -527,7 +692,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       const periodNames = schedule.periods.map((period) => period.name).join(" → ");
       const row = new Setting(group)
         .setName(schedule.name)
-        .setDesc(`С ${startOfScheduleWeek(schedule.startDate)} · ${periodNames}`)
+        .setDesc(`С ${schedule.startDate} · ${periodNames}`)
         .addButton((button) => button.setButtonText("Изменить").onClick(() => {
           new ScheduleEditorModal(this.plugin, schedule, false).open();
         }))
@@ -553,7 +718,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           if (active.length >= 4) return;
           new ScheduleEditorModal(
             this.plugin,
-            createSchedule(moment().startOf("isoWeek").format("YYYY-MM-DD")),
+            createSchedule(moment().format("YYYY-MM-DD")),
             true
           ).open();
         }));

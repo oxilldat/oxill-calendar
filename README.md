@@ -19,6 +19,8 @@ The plugin works locally inside your Obsidian vault. It contains no telemetry an
 - unlimited custom statuses;
 - up to three colored status dots on each day;
 - status assignment from the date context menu;
+- bulk status assignment across a date range with a configurable interval;
+- removal of status assignments from a date range or the entire calendar;
 - Russian interface, light and dark themes, desktop and mobile support.
 
 ## Use cases
