@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0
+
+- Added type-ahead folder suggestions for periodic note locations.
+- Replaced template dropdowns with searchable Markdown file path fields.
+- Added folded-corner indicators for days with existing daily notes.
+- Added configurable indicator color and a 0.5–1.5 px inner black outline.
+
 ## 1.2.0
 
 - Added bulk status assignment across an inclusive date range with a configurable day interval.

@@ -4,7 +4,6 @@ import {
   PluginSettingTab,
   Setting,
   type SettingDefinitionItem,
-  TFile,
   setIcon
 } from "obsidian";
 import type { Moment } from "moment";
@@ -12,6 +11,7 @@ import type { Moment } from "moment";
 import type OxillCalendarPlugin from "./main";
 import authorAvatar from "../assets/ava.jpg";
 import { moment } from "./moment";
+import { FolderSuggest, MarkdownFileSuggest } from "./suggest";
 import {
   createPeriod,
   createSchedule,
@@ -526,6 +526,26 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           this.plugin.settings.confirmBeforeCreate = value;
           void this.plugin.saveSettings();
         }));
+    new Setting(generalGroup)
+      .setName("Цвет индикатора созданной заметки")
+      .setDesc("Цвет загнутого уголка у дня с существующей заметкой.")
+      .addColorPicker((picker) => picker
+        .setValue(this.plugin.settings.noteIndicatorColor)
+        .onChange((value) => {
+          this.plugin.settings.noteIndicatorColor = value;
+          void this.plugin.saveSettings();
+        }));
+    new Setting(generalGroup)
+      .setName("Обводка индикатора")
+      .setDesc("Толщина внутренней чёрной обводки от 0,5 до 1,5 px.")
+      .addSlider((slider) => slider
+        .setLimits(0.5, 1.5, 0.1)
+        .setValue(this.plugin.settings.noteIndicatorBorderWidth)
+        .setDynamicTooltip()
+        .onChange((value) => {
+          this.plugin.settings.noteIndicatorBorderWidth = value;
+          void this.plugin.saveSettings();
+        }));
 
     const notesSection = this.createSection(
       "notes",
@@ -778,25 +798,29 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     summary.createSpan({ cls: "oxill-calendar-note-meta", text: summaryMeta });
     const body = details.createDiv({ cls: "oxill-calendar-note-settings-body" });
 
-    new Setting(body).setName("Папка").setDesc("Куда сохранять новые заметки.").addText((text) =>
-      text.setValue(config.folder).onChange((value) => {
+    new Setting(body).setName("Папка").setDesc("Куда сохранять новые заметки.").addText((text) => {
+      text.setPlaceholder("Начните вводить путь…").setValue(config.folder).onChange((value) => {
         config.folder = value.trim();
         void this.plugin.saveSettings();
-      })
-    );
+      });
+      new FolderSuggest(this.app, text.inputEl, (path) => {
+        config.folder = path;
+        void this.plugin.saveSettings();
+      });
+    });
     new Setting(body).setName("Формат имени").setDesc("Формат Moment.js для имени файла.").addText((text) =>
       text.setValue(config.format).onChange((value) => {
         config.format = value || config.format;
         void this.plugin.saveSettings();
       })
     );
-    new Setting(body).setName("Шаблон").setDesc("Markdown-файл, который применяется при создании.").addDropdown((dropdown) => {
-      dropdown.addOption("", "Без шаблона");
-      this.app.vault.getMarkdownFiles()
-        .sort((a: TFile, b: TFile) => a.path.localeCompare(b.path, "ru"))
-        .forEach((file: TFile) => dropdown.addOption(file.path, file.path));
-      dropdown.setValue(config.template).onChange((value) => {
-        config.template = value;
+    new Setting(body).setName("Шаблон").setDesc("Путь к Markdown-файлу. Оставьте поле пустым, чтобы не применять шаблон.").addText((text) => {
+      text.setPlaceholder("Начните вводить имя файла…").setValue(config.template).onChange((value) => {
+        config.template = value.trim();
+        void this.plugin.saveSettings();
+      });
+      new MarkdownFileSuggest(this.app, text.inputEl, (path) => {
+        config.template = path;
         void this.plugin.saveSettings();
       });
     });

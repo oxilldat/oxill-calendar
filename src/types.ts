@@ -29,6 +29,8 @@ export interface CalendarStatus {
 
 export interface OxillCalendarSettings {
   confirmBeforeCreate: boolean;
+  noteIndicatorColor: string;
+  noteIndicatorBorderWidth: number;
   daily: PeriodicNoteSettings;
   weekly: PeriodicNoteSettings;
   monthly: PeriodicNoteSettings;
@@ -49,6 +51,8 @@ export interface DayScheduleInfo {
 
 export const DEFAULT_SETTINGS: OxillCalendarSettings = {
   confirmBeforeCreate: true,
+  noteIndicatorColor: "#A8C7FA",
+  noteIndicatorBorderWidth: 1,
   daily: {
     folder: "Ежедневные заметки",
     format: "YYYY-MM-DD",

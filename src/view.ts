@@ -161,6 +161,14 @@ export class CalendarView extends ItemView {
     const container = this.contentEl;
     container.empty();
     container.addClass("oxill-calendar-view");
+    container.style.setProperty(
+      "--oxill-note-indicator-color",
+      this.plugin.settings.noteIndicatorColor
+    );
+    container.style.setProperty(
+      "--oxill-note-indicator-border-width",
+      `${this.plugin.settings.noteIndicatorBorderWidth}px`
+    );
 
     const navigation = container.createDiv({ cls: "oxill-calendar-nav" });
     const monthButton = navigation.createEl("button", {
@@ -244,6 +252,18 @@ export class CalendarView extends ItemView {
         if (date.isSame(today, "day")) button.addClass("is-today");
 
         const notePath = getNotePath(this.plugin.settings, "daily", date);
+        const noteFile = this.app.vault.getAbstractFileByPath(notePath);
+        if (noteFile instanceof TFile) {
+          button.addClass("has-note");
+          const indicator = button.createSpan({ cls: "oxill-calendar-note-indicator" });
+          const svg = createSvg("svg", {
+            attr: { viewBox: "0 0 14 14", "aria-hidden": "true" }
+          });
+          svg.appendChild(createSvg("polygon", {
+            attr: { points: "1 1 13 1 13 13" }
+          }));
+          indicator.appendChild(svg);
+        }
         if (notePath === activePath) button.addClass("is-active");
 
         const schedule = getDaySchedule(this.plugin.settings, date);

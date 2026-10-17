@@ -169,6 +169,12 @@ export default class OxillCalendarPlugin extends Plugin {
     this.settings = {
       confirmBeforeCreate:
         raw?.confirmBeforeCreate ?? raw?.shouldConfirmBeforeCreate ?? DEFAULT_SETTINGS.confirmBeforeCreate,
+      noteIndicatorColor: typeof raw?.noteIndicatorColor === "string"
+        ? raw.noteIndicatorColor
+        : DEFAULT_SETTINGS.noteIndicatorColor,
+      noteIndicatorBorderWidth: typeof raw?.noteIndicatorBorderWidth === "number"
+        ? Math.min(1.5, Math.max(0.5, raw.noteIndicatorBorderWidth))
+        : DEFAULT_SETTINGS.noteIndicatorBorderWidth,
       daily: mergeNoteSettings(DEFAULT_SETTINGS.daily, raw?.daily),
       weekly: mergeNoteSettings(DEFAULT_SETTINGS.weekly, raw?.weekly || legacyWeekly),
       monthly: mergeNoteSettings(DEFAULT_SETTINGS.monthly, raw?.monthly),

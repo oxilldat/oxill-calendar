@@ -141,6 +141,30 @@
   box-shadow: inset 0 0 0 1px var(--interactive-accent);
 }
 
+.oxill-calendar-note-indicator {
+  height: 12px;
+  pointer-events: none;
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 12px;
+}
+
+.oxill-calendar-note-indicator svg {
+  display: block;
+  height: 100%;
+  overflow: visible;
+  width: 100%;
+}
+
+.oxill-calendar-note-indicator polygon {
+  fill: var(--oxill-note-indicator-color, #A8C7FA);
+  stroke: #000;
+  stroke-linejoin: round;
+  stroke-width: var(--oxill-note-indicator-border-width, 1px);
+  vector-effect: non-scaling-stroke;
+}
+
 .oxill-calendar-status-dots {
   bottom: 3px;
   display: flex;
