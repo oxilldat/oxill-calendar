@@ -162,6 +162,14 @@ export class CalendarView extends ItemView {
     container.empty();
     container.addClass("oxill-calendar-view");
     container.style.setProperty(
+      "--oxill-calendar-number-color-light",
+      this.plugin.settings.calendarNumberColorLight
+    );
+    container.style.setProperty(
+      "--oxill-calendar-number-color-dark",
+      this.plugin.settings.calendarNumberColorDark
+    );
+    container.style.setProperty(
       "--oxill-note-indicator-color",
       this.plugin.settings.noteIndicatorColor
     );

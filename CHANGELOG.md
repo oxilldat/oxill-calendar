@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0
+
+- Added separate calendar number colors for light and dark themes.
+- Calendar numbers default to black in the light theme and white in the dark theme.
+- Applied custom number colors consistently to plain and schedule-colored days.
+
 ## 1.3.0
 
 - Added type-ahead folder suggestions for periodic note locations.

@@ -111,6 +111,14 @@
   width: 100%;
 }
 
+.theme-light .oxill-calendar-grid button.oxill-calendar-day {
+  color: var(--oxill-calendar-number-color-light, #000);
+}
+
+.theme-dark .oxill-calendar-grid button.oxill-calendar-day {
+  color: var(--oxill-calendar-number-color-dark, #fff);
+}
+
 .oxill-calendar-grid button.oxill-calendar-day:not(.has-work-schedule):not(.has-project-schedule):not(.has-split-schedule),
 .oxill-calendar-grid .oxill-calendar-week-cell button {
   background: transparent;
@@ -273,7 +281,6 @@
 .oxill-calendar-day.has-work-schedule,
 .oxill-calendar-day.has-project-schedule,
 .oxill-calendar-day.has-split-schedule {
-  color: var(--text-normal);
   text-shadow: none;
 }
 

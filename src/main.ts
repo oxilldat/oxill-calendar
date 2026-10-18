@@ -169,6 +169,12 @@ export default class OxillCalendarPlugin extends Plugin {
     this.settings = {
       confirmBeforeCreate:
         raw?.confirmBeforeCreate ?? raw?.shouldConfirmBeforeCreate ?? DEFAULT_SETTINGS.confirmBeforeCreate,
+      calendarNumberColorLight: typeof raw?.calendarNumberColorLight === "string"
+        ? raw.calendarNumberColorLight
+        : DEFAULT_SETTINGS.calendarNumberColorLight,
+      calendarNumberColorDark: typeof raw?.calendarNumberColorDark === "string"
+        ? raw.calendarNumberColorDark
+        : DEFAULT_SETTINGS.calendarNumberColorDark,
       noteIndicatorColor: typeof raw?.noteIndicatorColor === "string"
         ? raw.noteIndicatorColor
         : DEFAULT_SETTINGS.noteIndicatorColor,

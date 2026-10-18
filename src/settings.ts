@@ -527,6 +527,24 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           void this.plugin.saveSettings();
         }));
     new Setting(generalGroup)
+      .setName("Цвет цифр — светлая тема")
+      .setDesc("По умолчанию — чёрный.")
+      .addColorPicker((picker) => picker
+        .setValue(this.plugin.settings.calendarNumberColorLight)
+        .onChange((value) => {
+          this.plugin.settings.calendarNumberColorLight = value;
+          void this.plugin.saveSettings();
+        }));
+    new Setting(generalGroup)
+      .setName("Цвет цифр — тёмная тема")
+      .setDesc("По умолчанию — белый.")
+      .addColorPicker((picker) => picker
+        .setValue(this.plugin.settings.calendarNumberColorDark)
+        .onChange((value) => {
+          this.plugin.settings.calendarNumberColorDark = value;
+          void this.plugin.saveSettings();
+        }));
+    new Setting(generalGroup)
       .setName("Цвет индикатора созданной заметки")
       .setDesc("Цвет загнутого уголка у дня с существующей заметкой.")
       .addColorPicker((picker) => picker

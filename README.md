@@ -13,6 +13,7 @@ The plugin works locally inside your Obsidian vault. It contains no telemetry an
 - separate folders, filename formats and templates for every note type;
 - searchable folder and Markdown template path suggestions;
 - customizable folded-corner indicators for days with existing notes;
+- separate calendar number colors for light and dark themes;
 - up to four independent recurring schedules;
 - ordered weekly periods with an individual start date;
 - hours for every weekday and a pastel color for every period;
