@@ -7,6 +7,7 @@ import type {
   OxillCalendarSettings,
   ScheduleOccurrence
 } from "./types";
+import { startOfWeek } from "./week";
 
 function containsDate(schedule: CalendarSchedule, date: Moment): boolean {
   const start = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("day");
@@ -18,10 +19,14 @@ function containsDate(schedule: CalendarSchedule, date: Moment): boolean {
 
 function getOccurrence(
   schedule: CalendarSchedule,
-  date: Moment
+  date: Moment,
+  settings: OxillCalendarSettings
 ): ScheduleOccurrence | null {
-  const cycleStart = moment(schedule.startDate, "YYYY-MM-DD", true).startOf("isoWeek");
-  const elapsedWeeks = date.clone().startOf("isoWeek").diff(cycleStart, "weeks");
+  const cycleStart = startOfWeek(
+    moment(schedule.startDate, "YYYY-MM-DD", true),
+    settings.weekStartsOn
+  );
+  const elapsedWeeks = startOfWeek(date, settings.weekStartsOn).diff(cycleStart, "weeks");
   const period = schedule.periods[elapsedWeeks % schedule.periods.length];
   const weekday = date.isoWeekday();
 
@@ -36,7 +41,7 @@ export function getDaySchedule(
   const occurrences = settings.schedules
     .filter((schedule) => schedule.periods.length > 0 && containsDate(schedule, date))
     .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id))
-    .map((schedule) => getOccurrence(schedule, date))
+    .map((schedule) => getOccurrence(schedule, date, settings))
     .filter((item): item is ScheduleOccurrence => item !== null)
     .slice(0, 4);
   return occurrences.length > 0 ? { occurrences } : null;

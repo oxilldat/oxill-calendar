@@ -1,4 +1,5 @@
 export type NoteKind = "daily" | "weekly" | "monthly";
+export type WeekStart = "monday" | "sunday";
 
 export interface PeriodicNoteSettings {
   folder: string;
@@ -31,6 +32,9 @@ export interface OxillCalendarSettings {
   confirmBeforeCreate: boolean;
   calendarNumberColorLight: string;
   calendarNumberColorDark: string;
+  weekStartsOn: WeekStart;
+  dailyWeekdayTemplatesEnabled: boolean;
+  dailyWeekdayTemplates: Record<string, string>;
   noteIndicatorColor: string;
   noteIndicatorBorderWidth: number;
   daily: PeriodicNoteSettings;
@@ -55,6 +59,9 @@ export const DEFAULT_SETTINGS: OxillCalendarSettings = {
   confirmBeforeCreate: true,
   calendarNumberColorLight: "#000000",
   calendarNumberColorDark: "#FFFFFF",
+  weekStartsOn: "monday",
+  dailyWeekdayTemplatesEnabled: false,
+  dailyWeekdayTemplates: {},
   noteIndicatorColor: "#A8C7FA",
   noteIndicatorBorderWidth: 1,
   daily: {

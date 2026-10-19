@@ -175,6 +175,12 @@ export default class OxillCalendarPlugin extends Plugin {
       calendarNumberColorDark: typeof raw?.calendarNumberColorDark === "string"
         ? raw.calendarNumberColorDark
         : DEFAULT_SETTINGS.calendarNumberColorDark,
+      weekStartsOn: raw?.weekStartsOn === "sunday" ? "sunday" : "monday",
+      dailyWeekdayTemplatesEnabled: raw?.dailyWeekdayTemplatesEnabled === true,
+      dailyWeekdayTemplates: raw?.dailyWeekdayTemplates && typeof raw.dailyWeekdayTemplates === "object"
+        ? Object.fromEntries(Object.entries(raw.dailyWeekdayTemplates)
+          .filter(([weekday, path]) => /^[1-7]$/.test(weekday) && typeof path === "string"))
+        : {},
       noteIndicatorColor: typeof raw?.noteIndicatorColor === "string"
         ? raw.noteIndicatorColor
         : DEFAULT_SETTINGS.noteIndicatorColor,

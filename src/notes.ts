@@ -9,6 +9,7 @@ import {
 } from "obsidian";
 
 import { moment } from "./moment";
+import { dateForIsoWeekday, startOfWeek } from "./week";
 
 import type {
   NoteKind,
@@ -33,8 +34,12 @@ export function noteSettingsFor(
   return settings[kind];
 }
 
-export function noteDate(kind: NoteKind, date: Moment): Moment {
-  if (kind === "weekly") return date.clone().startOf("isoWeek");
+export function noteDate(
+  settings: OxillCalendarSettings,
+  kind: NoteKind,
+  date: Moment
+): Moment {
+  if (kind === "weekly") return startOfWeek(date, settings.weekStartsOn);
   if (kind === "monthly") return date.clone().startOf("month");
   return date.clone();
 }
@@ -45,7 +50,11 @@ export function getNotePath(
   date: Moment
 ): string {
   const config = noteSettingsFor(settings, kind);
-  const title = noteDate(kind, date).locale("ru").format(config.format);
+  const normalizedDate = noteDate(settings, kind, date).locale("ru");
+  const titleDate = kind === "weekly" && settings.weekStartsOn === "sunday"
+    ? normalizedDate.clone().add(1, "day")
+    : normalizedDate;
+  const title = titleDate.format(config.format);
   return normalizePath(config.folder ? `${config.folder}/${title}.md` : `${title}.md`);
 }
 
@@ -64,7 +73,12 @@ async function ensureFolder(app: App, folderPath: string): Promise<void> {
   }
 }
 
-function applyTemplate(template: string, title: string, date: Moment): string {
+function applyTemplate(
+  template: string,
+  title: string,
+  date: Moment,
+  settings: OxillCalendarSettings
+): string {
   let result = template.replaceAll("{{title}}", title);
   result = result.replace(/{{date(?::([^}]+))?}}/g, (_match, format?: string) =>
     date.format(format || "YYYY-MM-DD")
@@ -74,7 +88,7 @@ function applyTemplate(template: string, title: string, date: Moment): string {
   );
 
   ENGLISH_WEEKDAYS.forEach((weekday, index) => {
-    const day = date.clone().startOf("isoWeek").add(index, "days");
+    const day = dateForIsoWeekday(date, index + 1, settings.weekStartsOn);
     const pattern = new RegExp(`{{${weekday}:([^}]+)}}`, "g");
     result = result.replace(pattern, (_match, format: string) => day.format(format));
   });
@@ -88,19 +102,31 @@ async function createNote(
   date: Moment
 ): Promise<TFile> {
   const config = noteSettingsFor(settings, kind);
-  const normalizedDate = noteDate(kind, date).locale("ru");
-  const title = normalizedDate.format(config.format);
+  const normalizedDate = noteDate(settings, kind, date).locale("ru");
+  const titleDate = kind === "weekly" && settings.weekStartsOn === "sunday"
+    ? normalizedDate.clone().add(1, "day")
+    : normalizedDate;
+  const title = titleDate.format(config.format);
   const path = getNotePath(settings, kind, date);
   const parent = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
   await ensureFolder(app, parent);
 
   let content = "";
-  if (config.template) {
-    const templateFile = app.vault.getAbstractFileByPath(normalizePath(config.template));
+  const weekdayTemplate = kind === "daily" && settings.dailyWeekdayTemplatesEnabled
+    ? settings.dailyWeekdayTemplates[String(normalizedDate.isoWeekday())]
+    : "";
+  const templatePath = weekdayTemplate || config.template;
+  if (templatePath) {
+    const templateFile = app.vault.getAbstractFileByPath(normalizePath(templatePath));
     if (!(templateFile instanceof TFile)) {
-      throw new Error(`Шаблон «${config.template}» не найден`);
+      throw new Error(`Шаблон «${templatePath}» не найден`);
     }
-    content = applyTemplate(await app.vault.cachedRead(templateFile), title, normalizedDate);
+    content = applyTemplate(
+      await app.vault.cachedRead(templateFile),
+      title,
+      normalizedDate,
+      settings
+    );
   }
   return app.vault.create(path, content);
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0
+
+- Added optional daily note templates for each weekday with fallback to the default template.
+- Added Monday or Sunday as the configurable first day of the week.
+- Applied the selected week start to the calendar, weekly notes and schedule period changes.
+
 ## 1.4.0
 
 - Added separate calendar number colors for light and dark themes.

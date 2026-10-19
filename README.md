@@ -10,6 +10,8 @@ The plugin works locally inside your Obsidian vault. It contains no telemetry an
 
 - monthly calendar in the Obsidian sidebar;
 - daily, weekly and monthly periodic notes;
+- optional daily note templates for each weekday;
+- configurable Monday or Sunday week start;
 - separate folders, filename formats and templates for every note type;
 - searchable folder and Markdown template path suggestions;
 - customizable folded-corner indicators for days with existing notes;

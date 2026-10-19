@@ -13,9 +13,11 @@ import { moment } from "./moment";
 import { getNotePath, openPeriodicNote } from "./notes";
 import { dayScheduleTooltip, getDaySchedule } from "./schedule";
 import type { NoteKind } from "./types";
+import { startOfWeek, weekNumber } from "./week";
 
 export const CALENDAR_VIEW_TYPE = "oxill-calendar-view";
-const WEEKDAYS = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+const MONDAY_FIRST_WEEKDAYS = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+const SUNDAY_FIRST_WEEKDAYS = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
 
 function shortRussianMonth(date: Moment): string {
   return new Intl.DateTimeFormat("ru-RU", { month: "short" })
@@ -222,20 +224,27 @@ export class CalendarView extends ItemView {
     const table = container.createEl("table", { cls: "oxill-calendar-grid" });
     const head = table.createEl("thead").createEl("tr");
     head.createEl("th", { text: "НЕД" });
-    WEEKDAYS.forEach((day) => head.createEl("th", { text: day }));
+    const weekdays = this.plugin.settings.weekStartsOn === "sunday"
+      ? SUNDAY_FIRST_WEEKDAYS
+      : MONDAY_FIRST_WEEKDAYS;
+    weekdays.forEach((day) => head.createEl("th", { text: day }));
 
     const body = table.createEl("tbody");
-    const cursor = this.displayedMonth.clone().startOf("month").startOf("isoWeek");
+    const cursor = startOfWeek(
+      this.displayedMonth.clone().startOf("month"),
+      this.plugin.settings.weekStartsOn
+    );
     const activePath = this.app.workspace.getActiveFile()?.path;
     const today = moment();
 
     for (let week = 0; week < 6; week += 1) {
       const row = body.createEl("tr");
       const weekDate = cursor.clone();
+      const number = weekNumber(weekDate, this.plugin.settings.weekStartsOn);
       const weekCell = row.createEl("td", { cls: "oxill-calendar-week-cell" });
       const weekButton = weekCell.createEl("button", {
-        text: String(weekDate.isoWeek()),
-        attr: { "aria-label": `Открыть заметку недели ${weekDate.isoWeek()}` }
+        text: String(number),
+        attr: { "aria-label": `Открыть заметку недели ${number}` }
       });
       if (getNotePath(this.plugin.settings, "weekly", weekDate) === activePath) {
         weekButton.addClass("is-active");

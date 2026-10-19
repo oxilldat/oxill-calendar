@@ -527,6 +527,17 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           void this.plugin.saveSettings();
         }));
     new Setting(generalGroup)
+      .setName("Начало недели")
+      .setDesc("Влияет на календарь, недельные заметки и смену периодов графика.")
+      .addDropdown((dropdown) => dropdown
+        .addOption("monday", "Понедельник")
+        .addOption("sunday", "Воскресенье")
+        .setValue(this.plugin.settings.weekStartsOn)
+        .onChange((value) => {
+          this.plugin.settings.weekStartsOn = value === "sunday" ? "sunday" : "monday";
+          void this.plugin.saveSettings();
+        }));
+    new Setting(generalGroup)
       .setName("Цвет цифр — светлая тема")
       .setDesc("По умолчанию — чёрный.")
       .addColorPicker((picker) => picker
@@ -812,7 +823,9 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     const summary = details.createEl("summary");
     summary.createSpan({ cls: "oxill-calendar-note-chevron", text: "›" });
     summary.createSpan({ cls: "oxill-calendar-note-title", text: label });
-    const summaryMeta = config.template ? config.template.split("/").pop() : "Без шаблона";
+    const summaryMeta = kind === "daily" && this.plugin.settings.dailyWeekdayTemplatesEnabled
+      ? "Шаблоны по дням"
+      : config.template ? config.template.split("/").pop() : "Без шаблона";
     summary.createSpan({ cls: "oxill-calendar-note-meta", text: summaryMeta });
     const body = details.createDiv({ cls: "oxill-calendar-note-settings-body" });
 
@@ -832,7 +845,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         void this.plugin.saveSettings();
       })
     );
-    new Setting(body).setName("Шаблон").setDesc("Путь к Markdown-файлу. Оставьте поле пустым, чтобы не применять шаблон.").addText((text) => {
+    new Setting(body).setName(kind === "daily" ? "Шаблон по умолчанию" : "Шаблон").setDesc("Путь к Markdown-файлу. Оставьте поле пустым, чтобы не применять шаблон.").addText((text) => {
       text.setPlaceholder("Начните вводить имя файла…").setValue(config.template).onChange((value) => {
         config.template = value.trim();
         void this.plugin.saveSettings();
@@ -842,6 +855,39 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         void this.plugin.saveSettings();
       });
     });
+    if (kind === "daily") {
+      let weekdayTemplates: HTMLElement;
+      new Setting(body)
+        .setName("Отдельные шаблоны по дням недели")
+        .setDesc("Пустое поле использует шаблон по умолчанию.")
+        .addToggle((toggle) => toggle
+          .setValue(this.plugin.settings.dailyWeekdayTemplatesEnabled)
+          .onChange((value) => {
+            this.plugin.settings.dailyWeekdayTemplatesEnabled = value;
+            weekdayTemplates.hidden = !value;
+            void this.plugin.saveSettings();
+          }));
+      weekdayTemplates = body.createDiv({ cls: "oxill-calendar-weekday-templates" });
+      weekdayTemplates.hidden = !this.plugin.settings.dailyWeekdayTemplatesEnabled;
+      WEEKDAYS.forEach((weekday, index) => {
+        const key = String(index + 1);
+        new Setting(weekdayTemplates).setName(weekday).addText((text) => {
+          text
+            .setPlaceholder("Шаблон по умолчанию")
+            .setValue(this.plugin.settings.dailyWeekdayTemplates[key] ?? "")
+            .onChange((value) => {
+              const path = value.trim();
+              if (path) this.plugin.settings.dailyWeekdayTemplates[key] = path;
+              else delete this.plugin.settings.dailyWeekdayTemplates[key];
+              void this.plugin.saveSettings();
+            });
+          new MarkdownFileSuggest(this.app, text.inputEl, (path) => {
+            this.plugin.settings.dailyWeekdayTemplates[key] = path;
+            void this.plugin.saveSettings();
+          });
+        });
+      });
+    }
   }
 
   private createHeading(name: string, description?: string): void {
