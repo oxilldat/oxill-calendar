@@ -1,5 +1,6 @@
 export type NoteKind = "daily" | "weekly" | "monthly";
 export type WeekStart = "monday" | "sunday";
+export type InterfaceLanguage = "ru" | "en";
 
 export interface PeriodicNoteSettings {
   folder: string;
@@ -28,13 +29,27 @@ export interface CalendarStatus {
   color: string;
 }
 
+export interface WorkPeriod {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  runningSince: string | null;
+  elapsedMs: number;
+  description: string;
+}
+
 export interface OxillCalendarSettings {
+  language: InterfaceLanguage;
   confirmBeforeCreate: boolean;
   calendarNumberColorLight: string;
   calendarNumberColorDark: string;
   weekStartsOn: WeekStart;
   dailyWeekdayTemplatesEnabled: boolean;
   dailyWeekdayTemplates: Record<string, string>;
+  workTimerEnabled: boolean;
+  workPeriodReportTemplate: string;
+  activeWorkPeriod: WorkPeriod | null;
+  pendingWorkPeriods: WorkPeriod[];
   noteIndicatorColor: string;
   noteIndicatorBorderWidth: number;
   daily: PeriodicNoteSettings;
@@ -56,12 +71,17 @@ export interface DayScheduleInfo {
 }
 
 export const DEFAULT_SETTINGS: OxillCalendarSettings = {
+  language: "ru",
   confirmBeforeCreate: true,
   calendarNumberColorLight: "#000000",
   calendarNumberColorDark: "#FFFFFF",
   weekStartsOn: "monday",
   dailyWeekdayTemplatesEnabled: false,
   dailyWeekdayTemplates: {},
+  workTimerEnabled: false,
+  workPeriodReportTemplate: "- {{start}}–{{end}} · {{duration}} — {{description}}",
+  activeWorkPeriod: null,
+  pendingWorkPeriods: [],
   noteIndicatorColor: "#A8C7FA",
   noteIndicatorBorderWidth: 1,
   daily: {
@@ -103,10 +123,10 @@ export function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function createStatus(): CalendarStatus {
+export function createStatus(name = "Новый статус"): CalendarStatus {
   return {
     id: createId("status"),
-    name: "Новый статус",
+    name,
     color: randomPastelColor()
   };
 }
@@ -120,12 +140,16 @@ export function createPeriod(name = "Новый период"): SchedulePeriod {
   };
 }
 
-export function createSchedule(startDate: string): CalendarSchedule {
+export function createSchedule(
+  startDate: string,
+  name = "Новый график",
+  periodName = "Новый период"
+): CalendarSchedule {
   return {
     id: createId("schedule"),
-    name: "Новый график",
+    name,
     startDate,
     archivedAt: null,
-    periods: [createPeriod()]
+    periods: [createPeriod(periodName)]
   };
 }

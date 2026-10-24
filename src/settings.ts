@@ -10,6 +10,7 @@ import type { Moment } from "moment";
 
 import type OxillCalendarPlugin from "./main";
 import authorAvatar from "../assets/ava.jpg";
+import { setInterfaceLanguage, t } from "./i18n";
 import { moment } from "./moment";
 import { FolderSuggest, MarkdownFileSuggest } from "./suggest";
 import {
@@ -22,7 +23,9 @@ import {
   type SchedulePeriod
 } from "./types";
 
-const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+function weekdays(): string[] {
+  return t("Пн,Вт,Ср,Чт,Пт,Сб,Вс", "Mon,Tue,Wed,Thu,Fri,Sat,Sun").split(",");
+}
 
 function numberValue(value: string, fallback: number, min: number, max: number): number {
   const parsed = Number(value);
@@ -47,20 +50,20 @@ class StatusPeriodModal extends Modal {
   }
 
   onOpen(): void {
-    this.titleEl.setText("Назначить статус на период");
+    this.titleEl.setText(t("Назначить статус на период", "Assign status over a period"));
     this.contentEl.createEl("p", {
       cls: "setting-item-description",
-      text: "Статус будет назначен от начальной до конечной даты включительно."
+      text: t("Статус будет назначен от начальной до конечной даты включительно.", "The status will be assigned from the start date through the end date, inclusive.")
     });
-    new Setting(this.contentEl).setName("Статус").addDropdown((dropdown) => {
+    new Setting(this.contentEl).setName(t("Статус", "Status")).addDropdown((dropdown) => {
       this.plugin.settings.statuses.forEach((status) => dropdown.addOption(status.id, status.name));
       dropdown.setValue(this.statusId).onChange((value) => { this.statusId = value; });
     });
-    this.addDateSetting("С даты", this.startDate, (value) => { this.startDate = value; });
-    this.addDateSetting("По дату", this.endDate, (value) => { this.endDate = value; });
+    this.addDateSetting(t("С даты", "From"), this.startDate, (value) => { this.startDate = value; });
+    this.addDateSetting(t("По дату", "To"), this.endDate, (value) => { this.endDate = value; });
     new Setting(this.contentEl)
-      .setName("Интервал")
-      .setDesc("Через сколько дней повторять статус. 1 — каждый день.")
+      .setName(t("Интервал", "Interval"))
+      .setDesc(t("Через сколько дней повторять статус. 1 — каждый день.", "Repeat the status every N days. 1 means every day."))
       .addText((text) => {
         text.inputEl.type = "number";
         text.inputEl.min = "1";
@@ -70,8 +73,8 @@ class StatusPeriodModal extends Modal {
         });
       });
     new Setting(this.contentEl)
-      .addButton((button) => button.setButtonText("Отмена").onClick(() => this.close()))
-      .addButton((button) => button.setCta().setButtonText("Назначить").onClick(() => {
+      .addButton((button) => button.setButtonText(t("Отмена", "Cancel")).onClick(() => this.close()))
+      .addButton((button) => button.setCta().setButtonText(t("Назначить", "Assign")).onClick(() => {
         void this.apply();
       }));
   }
@@ -87,14 +90,14 @@ class StatusPeriodModal extends Modal {
     const range = parseDateRange(this.startDate, this.endDate);
     const status = this.plugin.settings.statuses.find((item) => item.id === this.statusId);
     if (!range || !status) {
-      new Notice("Выберите статус и корректный диапазон дат");
+      new Notice(t("Выберите статус и корректный диапазон дат", "Select a status and a valid date range"));
       return;
     }
     const [start, end] = range;
     const interval = Math.max(1, Math.floor(this.interval));
     const occurrences = Math.floor(end.diff(start, "days") / interval) + 1;
     if (occurrences > 10_000) {
-      new Notice("Диапазон слишком большой: максимум 10 000 назначений");
+      new Notice(t("Диапазон слишком большой: максимум 10 000 назначений", "The range is too large: 10,000 assignments maximum"));
       return;
     }
 
@@ -114,8 +117,8 @@ class StatusPeriodModal extends Modal {
     await this.plugin.saveSettings();
     this.close();
     new Notice(skipped > 0
-      ? `Статус назначен: ${added}. Пропущено заполненных дней: ${skipped}`
-      : `Статус назначен: ${added}`);
+      ? t(`Статус назначен: ${added}. Пропущено заполненных дней: ${skipped}`, `Status assigned: ${added}. Full days skipped: ${skipped}`)
+      : t(`Статус назначен: ${added}`, `Status assigned: ${added}`));
   }
 }
 
@@ -129,32 +132,32 @@ class ClearStatusesModal extends Modal {
   }
 
   onOpen(): void {
-    this.titleEl.setText("Удалить назначения статусов");
+    this.titleEl.setText(t("Удалить назначения статусов", "Remove status assignments"));
     let startInput: HTMLInputElement;
     let endInput: HTMLInputElement;
-    new Setting(this.contentEl).setName("Область удаления").addDropdown((dropdown) => dropdown
-      .addOption("range", "Диапазон дат")
-      .addOption("all", "Все даты")
+    new Setting(this.contentEl).setName(t("Область удаления", "Removal scope")).addDropdown((dropdown) => dropdown
+      .addOption("range", t("Диапазон дат", "Date range"))
+      .addOption("all", t("Все даты", "All dates"))
       .setValue(this.deletionScope)
       .onChange((value) => {
         this.deletionScope = value === "all" ? "all" : "range";
         startInput.disabled = this.deletionScope === "all";
         endInput.disabled = this.deletionScope === "all";
       }));
-    new Setting(this.contentEl).setName("С даты").addText((text) => {
+    new Setting(this.contentEl).setName(t("С даты", "From")).addText((text) => {
       startInput = text.inputEl;
       startInput.type = "date";
       text.setValue(this.startDate).onChange((value) => { this.startDate = value; });
     });
-    new Setting(this.contentEl).setName("По дату").addText((text) => {
+    new Setting(this.contentEl).setName(t("По дату", "To")).addText((text) => {
       endInput = text.inputEl;
       endInput.type = "date";
       text.setValue(this.endDate).onChange((value) => { this.endDate = value; });
     });
     new Setting(this.contentEl)
-      .setDesc("Удаляются назначения в календаре. Сами статусы и их цвета останутся в настройках.")
-      .addButton((button) => button.setButtonText("Отмена").onClick(() => this.close()))
-      .addButton((button) => button.setDestructive().setButtonText("Удалить").onClick(() => {
+      .setDesc(t("Удаляются назначения в календаре. Сами статусы и их цвета останутся в настройках.", "Calendar assignments are removed. Statuses and their colors remain in settings."))
+      .addButton((button) => button.setButtonText(t("Отмена", "Cancel")).onClick(() => this.close()))
+      .addButton((button) => button.setDestructive().setButtonText(t("Удалить", "Delete")).onClick(() => {
         void this.clear();
       }));
   }
@@ -166,13 +169,13 @@ class ClearStatusesModal extends Modal {
       this.plugin.settings.dayStatuses = {};
       await this.plugin.saveSettings();
       this.close();
-      new Notice(`Удалено назначений: ${removed}`);
+      new Notice(t(`Удалено назначений: ${removed}`, `Assignments removed: ${removed}`));
       return;
     }
 
     const range = parseDateRange(this.startDate, this.endDate);
     if (!range) {
-      new Notice("Укажите корректный диапазон дат");
+      new Notice(t("Укажите корректный диапазон дат", "Enter a valid date range"));
       return;
     }
     const [start, end] = range;
@@ -185,7 +188,7 @@ class ClearStatusesModal extends Modal {
     });
     await this.plugin.saveSettings();
     this.close();
-    new Notice(`Удалено назначений: ${removed}`);
+    new Notice(t(`Удалено назначений: ${removed}`, `Assignments removed: ${removed}`));
   }
 }
 
@@ -195,13 +198,13 @@ function renderDayHours(
   onChange: () => void
 ): void {
   const block = parent.createDiv({ cls: "oxill-calendar-project-hours" });
-  block.createDiv({ cls: "setting-item-name", text: "Часы по дням" });
+  block.createDiv({ cls: "setting-item-name", text: t("Часы по дням", "Hours by weekday") });
   block.createDiv({
     cls: "setting-item-description",
-    text: "0 — график не действует в этот день. Допустимо от 0 до 24 часов."
+    text: t("0 — график не действует в этот день. Допустимо от 0 до 24 часов.", "0 means the schedule is inactive that day. Values from 0 to 24 hours are allowed.")
   });
   const grid = block.createDiv({ cls: "oxill-calendar-hours-grid" });
-  WEEKDAYS.forEach((label, index) => {
+  weekdays().forEach((label, index) => {
     const weekday = String(index + 1);
     const item = grid.createDiv();
     item.createEl("label", { text: label });
@@ -245,11 +248,11 @@ class ScheduleEditorModal extends Modal {
   private render(): void {
     const scrollTop = this.contentEl.scrollTop;
     this.contentEl.empty();
-    this.titleEl.setText(this.isNew ? "Создание графика" : "Редактирование графика");
+    this.titleEl.setText(this.isNew ? t("Создание графика", "Create schedule") : t("Редактирование графика", "Edit schedule"));
 
     this.contentEl.createDiv({
       cls: "oxill-calendar-modal-intro",
-      text: "Периоды идут по порядку и сменяют друг друга каждую неделю от даты отсчёта."
+      text: t("Периоды идут по порядку и сменяют друг друга каждую неделю от даты отсчёта.", "Periods run in order and rotate every week from the start date.")
     });
 
     const generalCard = this.contentEl.createDiv({
@@ -257,26 +260,26 @@ class ScheduleEditorModal extends Modal {
     });
     this.addInputField(
       generalCard,
-      "Название",
-      "Название всего циклического графика.",
+      t("Название", "Name"),
+      t("Название всего циклического графика.", "Name of the complete recurring schedule."),
       "text",
       this.draft.name,
       (value) => { this.draft.name = value; }
     );
     this.addInputField(
       generalCard,
-      "Дата начала",
-      "До этой даты график не действует. Периоды сменяются по понедельникам.",
+      t("Дата начала", "Start date"),
+      t("До этой даты график не действует. Периоды сменяются по понедельникам.", "The schedule is inactive before this date. Periods rotate on Mondays."),
       "date",
       this.draft.startDate,
       (value) => { this.draft.startDate = value; }
     );
 
     const periodsHeading = this.contentEl.createDiv({ cls: "oxill-calendar-modal-section-heading" });
-    periodsHeading.createDiv({ cls: "oxill-calendar-modal-section-title", text: "Периоды" });
+    periodsHeading.createDiv({ cls: "oxill-calendar-modal-section-title", text: t("Периоды", "Periods") });
     periodsHeading.createDiv({
       cls: "oxill-calendar-modal-section-description",
-      text: `${this.draft.periods.length} ${this.periodWord(this.draft.periods.length)} в цикле`
+      text: t(`${this.draft.periods.length} ${this.periodWord(this.draft.periods.length)} в цикле`, `${this.draft.periods.length} ${this.draft.periods.length === 1 ? "period" : "periods"} in the cycle`)
     });
 
     this.draft.periods.forEach((period, index) => {
@@ -303,7 +306,7 @@ class ScheduleEditorModal extends Modal {
       swatch.style.backgroundColor = period.color;
 
       const headerActions = header.createDiv({ cls: "oxill-calendar-period-header-actions" });
-      this.addHeaderButton(headerActions, "arrow-up", "Переместить выше", index === 0, () => {
+      this.addHeaderButton(headerActions, "arrow-up", t("Переместить выше", "Move up"), index === 0, () => {
         [this.draft.periods[index - 1], this.draft.periods[index]] = [
           this.draft.periods[index],
           this.draft.periods[index - 1]
@@ -313,7 +316,7 @@ class ScheduleEditorModal extends Modal {
       this.addHeaderButton(
         headerActions,
         "arrow-down",
-        "Переместить ниже",
+        t("Переместить ниже", "Move down"),
         index === this.draft.periods.length - 1,
         () => {
           [this.draft.periods[index], this.draft.periods[index + 1]] = [
@@ -323,9 +326,9 @@ class ScheduleEditorModal extends Modal {
           this.render();
         }
       );
-      this.addHeaderButton(headerActions, "trash-2", "Удалить период", false, () => {
+      this.addHeaderButton(headerActions, "trash-2", t("Удалить период", "Delete period"), false, () => {
         if (this.draft.periods.length === 1) {
-          new Notice("В графике должен остаться хотя бы один период");
+          new Notice(t("В графике должен остаться хотя бы один период", "A schedule must contain at least one period"));
           return;
         }
         this.draft.periods.splice(index, 1);
@@ -358,14 +361,14 @@ class ScheduleEditorModal extends Modal {
 
       this.addInputField(
         body,
-        "Название периода",
-        "Отображается в календаре и краткой сводке.",
+        t("Название периода", "Period name"),
+        t("Отображается в календаре и краткой сводке.", "Shown in the calendar and summary."),
         "text",
         period.name,
         (value) => { period.name = value; }
       );
 
-      this.addColorField(body, "Цвет", "Цвет графика в календаре.", period.color, (value) => {
+      this.addColorField(body, t("Цвет", "Color"), t("Цвет графика в календаре.", "Schedule color in the calendar."), period.color, (value) => {
         period.color = value;
         swatch.style.backgroundColor = value;
       });
@@ -374,10 +377,10 @@ class ScheduleEditorModal extends Modal {
 
     const addPeriod = this.contentEl.createEl("button", {
       cls: "oxill-calendar-add-period",
-      text: "+ Добавить период"
+      text: t("+ Добавить период", "+ Add period")
     });
     addPeriod.addEventListener("click", () => {
-        const period = createPeriod(`Период ${this.draft.periods.length + 1}`);
+        const period = createPeriod(`${t("Период", "Period")} ${this.draft.periods.length + 1}`);
         this.draft.periods.push(period);
         this.expandedPeriodIds.clear();
         this.expandedPeriodIds.add(period.id);
@@ -385,8 +388,8 @@ class ScheduleEditorModal extends Modal {
     });
 
     this.footerEl.empty();
-    this.footerEl.createEl("button", { text: "Отмена" }).addEventListener("click", () => this.close());
-    this.footerEl.createEl("button", { cls: "mod-cta", text: "Сохранить" }).addEventListener("click", () => {
+    this.footerEl.createEl("button", { text: t("Отмена", "Cancel") }).addEventListener("click", () => this.close());
+    this.footerEl.createEl("button", { cls: "mod-cta", text: t("Сохранить", "Save") }).addEventListener("click", () => {
       void this.saveDraft();
     });
 
@@ -397,7 +400,7 @@ class ScheduleEditorModal extends Modal {
 
   private async saveDraft(): Promise<void> {
       if (!this.draft.name.trim() || !moment(this.draft.startDate, "YYYY-MM-DD", true).isValid()) {
-        new Notice("Укажите название и корректную дату отсчёта");
+        new Notice(t("Укажите название и корректную дату отсчёта", "Enter a name and a valid start date"));
         return;
       }
       if (this.isNew) this.plugin.settings.schedules.push(this.draft);
@@ -481,7 +484,7 @@ class ScheduleEditorModal extends Modal {
   private periodSummary(period: SchedulePeriod): string {
     const values = Object.values(period.dayHours).filter((hours) => Number(hours) > 0);
     const total = values.reduce((sum, hours) => sum + Number(hours), 0);
-    return `${values.length} дн. · ${total} ч в неделю`;
+    return t(`${values.length} дн. · ${total} ч в неделю`, `${values.length} days · ${total} h per week`);
   }
 
   private periodWord(count: number): string {
@@ -502,7 +505,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
   getSettingDefinitions(): SettingDefinitionItem[] {
     return [{
       name: "Oxill Calendar",
-      aliases: ["календарь", "заметки", "графики", "статусы", "шаблоны"],
+      aliases: ["календарь", "заметки", "графики", "статусы", "шаблоны", "calendar", "notes", "schedules", "statuses", "templates"],
       render: (setting) => {
         setting.settingEl.empty();
         setting.settingEl.addClass("oxill-calendar-settings-host");
@@ -516,10 +519,25 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.addClass("oxill-calendar-settings");
 
-    const generalGroup = this.createGroup("Основное");
+    const generalGroup = this.createGroup(t("Основное", "General"));
     new Setting(generalGroup)
-      .setName("Подтверждать создание заметки")
-      .setDesc("Показывать запрос перед созданием отсутствующей периодической заметки.")
+      .setName(t("Язык интерфейса", "Interface language"))
+      .setDesc(t("Язык календаря, настроек и уведомлений плагина.", "Language used by the calendar, settings and plugin notices."))
+      .addDropdown((dropdown) => dropdown
+        .addOption("ru", "Русский")
+        .addOption("en", "English")
+        .setValue(this.plugin.settings.language)
+        .onChange((value) => {
+          this.plugin.settings.language = value === "en" ? "en" : "ru";
+          setInterfaceLanguage(this.plugin.settings.language);
+          void this.plugin.saveSettings().then(() => {
+            this.plugin.workTimer.refresh();
+            this.update();
+          });
+        }));
+    new Setting(generalGroup)
+      .setName(t("Подтверждать создание заметки", "Confirm note creation"))
+      .setDesc(t("Показывать запрос перед созданием отсутствующей периодической заметки.", "Ask before creating a missing periodic note."))
       .addToggle((toggle) => toggle
         .setValue(this.plugin.settings.confirmBeforeCreate)
         .onChange((value) => {
@@ -527,19 +545,19 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           void this.plugin.saveSettings();
         }));
     new Setting(generalGroup)
-      .setName("Начало недели")
-      .setDesc("Влияет на календарь, недельные заметки и смену периодов графика.")
+      .setName(t("Начало недели", "First day of week"))
+      .setDesc(t("Влияет на календарь, недельные заметки и смену периодов графика.", "Affects the calendar, weekly notes and schedule period rotation."))
       .addDropdown((dropdown) => dropdown
-        .addOption("monday", "Понедельник")
-        .addOption("sunday", "Воскресенье")
+        .addOption("monday", t("Понедельник", "Monday"))
+        .addOption("sunday", t("Воскресенье", "Sunday"))
         .setValue(this.plugin.settings.weekStartsOn)
         .onChange((value) => {
           this.plugin.settings.weekStartsOn = value === "sunday" ? "sunday" : "monday";
           void this.plugin.saveSettings();
         }));
     new Setting(generalGroup)
-      .setName("Цвет цифр — светлая тема")
-      .setDesc("По умолчанию — чёрный.")
+      .setName(t("Цвет цифр — светлая тема", "Number color — light theme"))
+      .setDesc(t("По умолчанию — чёрный.", "Black by default."))
       .addColorPicker((picker) => picker
         .setValue(this.plugin.settings.calendarNumberColorLight)
         .onChange((value) => {
@@ -547,8 +565,8 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           void this.plugin.saveSettings();
         }));
     new Setting(generalGroup)
-      .setName("Цвет цифр — тёмная тема")
-      .setDesc("По умолчанию — белый.")
+      .setName(t("Цвет цифр — тёмная тема", "Number color — dark theme"))
+      .setDesc(t("По умолчанию — белый.", "White by default."))
       .addColorPicker((picker) => picker
         .setValue(this.plugin.settings.calendarNumberColorDark)
         .onChange((value) => {
@@ -556,8 +574,8 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           void this.plugin.saveSettings();
         }));
     new Setting(generalGroup)
-      .setName("Цвет индикатора созданной заметки")
-      .setDesc("Цвет загнутого уголка у дня с существующей заметкой.")
+      .setName(t("Цвет индикатора созданной заметки", "Created-note indicator color"))
+      .setDesc(t("Цвет загнутого уголка у дня с существующей заметкой.", "Color of the folded corner on days with an existing note."))
       .addColorPicker((picker) => picker
         .setValue(this.plugin.settings.noteIndicatorColor)
         .onChange((value) => {
@@ -565,8 +583,8 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           void this.plugin.saveSettings();
         }));
     new Setting(generalGroup)
-      .setName("Обводка индикатора")
-      .setDesc("Толщина внутренней чёрной обводки от 0,5 до 1,5 px.")
+      .setName(t("Обводка индикатора", "Indicator outline"))
+      .setDesc(t("Толщина внутренней чёрной обводки от 0,5 до 1,5 px.", "Inner black outline width from 0.5 to 1.5 px."))
       .addSlider((slider) => slider
         .setLimits(0.5, 1.5, 0.1)
         .setValue(this.plugin.settings.noteIndicatorBorderWidth)
@@ -576,20 +594,52 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           void this.plugin.saveSettings();
         }));
 
+    const workTimerSection = this.createSection(
+      "work-timer",
+      t("Рабочие периоды", "Work periods"),
+      t("Секундомер и отчёты в дневных заметках.", "Timer and reports in daily notes."),
+      this.plugin.settings.workTimerEnabled ? t("Включено", "Enabled") : t("Выключено", "Disabled")
+    );
+    const workTimerGroup = workTimerSection.createDiv({
+      cls: "oxill-calendar-settings-group"
+    });
+    new Setting(workTimerGroup)
+      .setName(t("Включить таймер", "Enable timer"))
+      .setDesc(t("Показывать кнопку «Старт» и управление рабочим периодом.", "Show the Start button and work-period controls."))
+      .addToggle((toggle) => toggle
+        .setValue(this.plugin.settings.workTimerEnabled)
+        .onChange((value) => void this.plugin.workTimer.setEnabled(value)));
+    new Setting(workTimerGroup)
+      .setName(t("Шаблон отчёта", "Report template"))
+      .setDesc(t("Переменные: {{date}}, {{start}}, {{end}}, {{duration}}, {{description}}. Для даты и времени можно указать формат после двоеточия.", "Variables: {{date}}, {{start}}, {{end}}, {{duration}}, {{description}}. Add a format after a colon for date and time values."))
+      .addTextArea((text) => text
+        .setPlaceholder("- {{start}}–{{end}} · {{duration}} — {{description}}")
+        .setValue(this.plugin.settings.workPeriodReportTemplate)
+        .onChange((value) => {
+          this.plugin.settings.workPeriodReportTemplate = value;
+          void this.plugin.saveSettings();
+        }));
+    new Setting(workTimerGroup)
+      .setName(t("Незаполненные периоды", "Unfinished reports"))
+      .setDesc(t(`Ожидают отчёта: ${this.plugin.settings.pendingWorkPeriods.length}`, `Awaiting report: ${this.plugin.settings.pendingWorkPeriods.length}`))
+      .addButton((button) => button
+        .setButtonText(t("Открыть", "Open"))
+        .onClick(() => void this.plugin.openWorkPeriodsView()));
+
     const notesSection = this.createSection(
       "notes",
-      "Периодические заметки",
-      "Папки, форматы имён и шаблоны.",
-      "3 типа"
+      t("Периодические заметки", "Periodic notes"),
+      t("Папки, форматы имён и шаблоны.", "Folders, filename formats and templates."),
+      t("3 типа", "3 types")
     );
-    this.renderNoteSettings(notesSection, "daily", "Дневная заметка");
-    this.renderNoteSettings(notesSection, "weekly", "Недельная заметка");
-    this.renderNoteSettings(notesSection, "monthly", "Месячная заметка");
+    this.renderNoteSettings(notesSection, "daily", t("Дневная заметка", "Daily note"));
+    this.renderNoteSettings(notesSection, "weekly", t("Недельная заметка", "Weekly note"));
+    this.renderNoteSettings(notesSection, "monthly", t("Месячная заметка", "Monthly note"));
 
     const statusesSection = this.createSection(
       "statuses",
-      "Статусы",
-      "На один день можно назначить до трёх статусов.",
+      t("Статусы", "Statuses"),
+      t("На один день можно назначить до трёх статусов.", "Up to three statuses can be assigned to one day."),
       String(this.plugin.settings.statuses.length)
     );
     const statusesGroup = statusesSection.createDiv({
@@ -598,17 +648,17 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     if (this.plugin.settings.statuses.length === 0) {
       statusesGroup.createDiv({
         cls: "oxill-calendar-empty-state",
-        text: "Статусы пока не созданы."
+        text: t("Статусы пока не созданы.", "No statuses have been created yet.")
       });
     }
     this.plugin.settings.statuses.forEach((status) => {
       const row = new Setting(statusesGroup)
         .setName(status.name)
         .addText((text) => text
-          .setPlaceholder("Например, тренировка")
+          .setPlaceholder(t("Например, тренировка", "For example, workout"))
           .setValue(status.name)
           .onChange((value) => {
-            status.name = value.trim() || "Без названия";
+            status.name = value.trim() || t("Без названия", "Untitled");
             void this.plugin.saveSettings();
           }))
         .addColorPicker((picker) => picker
@@ -620,7 +670,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           }))
         .addButton((button) => button
           .setIcon("trash-2")
-          .setTooltip("Удалить статус")
+          .setTooltip(t("Удалить статус", "Delete status"))
           .setDestructive()
           .onClick(() => {
             this.plugin.settings.statuses = this.plugin.settings.statuses.filter(
@@ -639,23 +689,23 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       marker.style.backgroundColor = status.color;
     });
     new Setting(statusesGroup)
-      .setName("Новый статус")
+      .setName(t("Новый статус", "New status"))
       .addButton((button) => button
         .setCta()
-        .setButtonText("Добавить")
+        .setButtonText(t("Добавить", "Add"))
         .onClick(() => {
-          this.plugin.settings.statuses.push(createStatus());
+          this.plugin.settings.statuses.push(createStatus(t("Новый статус", "New status")));
           void this.saveAndRefresh();
         }));
     new Setting(statusesGroup)
-      .setName("Массовые действия")
-      .setDesc("Назначить статус по датам или очистить назначения.")
+      .setName(t("Массовые действия", "Bulk actions"))
+      .setDesc(t("Назначить статус по датам или очистить назначения.", "Assign a status by date or clear assignments."))
       .addButton((button) => button
-        .setButtonText("Назначить период")
+        .setButtonText(t("Назначить период", "Assign period"))
         .setDisabled(this.plugin.settings.statuses.length === 0)
         .onClick(() => new StatusPeriodModal(this.plugin).open()))
       .addButton((button) => button
-        .setButtonText("Удалить назначения")
+        .setButtonText(t("Удалить назначения", "Remove assignments"))
         .setDestructive()
         .onClick(() => new ClearStatusesModal(this.plugin).open()));
 
@@ -665,8 +715,8 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     if (archived.length > 0) {
       const archiveSection = this.createSection(
         "archive",
-        "Архив",
-        "Завершённые графики и их история.",
+        t("Архив", "Archive"),
+        t("Завершённые графики и их история.", "Completed schedules and their history."),
         String(archived.length)
       );
       const archiveGroup = archiveSection.createDiv({
@@ -676,18 +726,18 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         new Setting(archiveGroup)
           .setName(schedule.name)
           .setDesc(`${schedule.startDate} — ${schedule.archivedAt}`)
-          .addButton((button) => button.setButtonText("Изменить").onClick(() => {
+          .addButton((button) => button.setButtonText(t("Изменить", "Edit")).onClick(() => {
             new ScheduleEditorModal(this.plugin, schedule, false).open();
           }))
-          .addButton((button) => button.setButtonText("Восстановить").onClick(() => {
+          .addButton((button) => button.setButtonText(t("Восстановить", "Restore")).onClick(() => {
             if (this.plugin.settings.schedules.filter((item) => !item.archivedAt).length >= 4) {
-              new Notice("Можно использовать не более четырёх активных графиков");
+              new Notice(t("Можно использовать не более четырёх активных графиков", "You can use no more than four active schedules"));
               return;
             }
             schedule.archivedAt = null;
             void this.saveAndRefresh();
           }))
-          .addButton((button) => button.setDestructive().setButtonText("Удалить").onClick(() => {
+          .addButton((button) => button.setDestructive().setButtonText(t("Удалить", "Delete")).onClick(() => {
             this.plugin.settings.schedules = this.plugin.settings.schedules.filter(
               (item) => item.id !== schedule.id
             );
@@ -726,26 +776,26 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     const active = this.plugin.settings.schedules.filter((item) => !item.archivedAt);
     const section = this.createSection(
       "schedules",
-      "Графики",
-      "До четырёх независимых циклических графиков.",
-      `${active.length} из 4`
+      t("Графики", "Schedules"),
+      t("До четырёх независимых циклических графиков.", "Up to four independent recurring schedules."),
+      t(`${active.length} из 4`, `${active.length} of 4`)
     );
     const group = section.createDiv({
       cls: "oxill-calendar-settings-group oxill-calendar-schedules-group"
     });
 
     if (active.length === 0) {
-      group.createDiv({ cls: "oxill-calendar-empty-state", text: "Активного графика пока нет." });
+      group.createDiv({ cls: "oxill-calendar-empty-state", text: t("Активного графика пока нет.", "There are no active schedules yet.") });
     }
     active.forEach((schedule) => {
       const periodNames = schedule.periods.map((period) => period.name).join(" → ");
       const row = new Setting(group)
         .setName(schedule.name)
-        .setDesc(`С ${schedule.startDate} · ${periodNames}`)
-        .addButton((button) => button.setButtonText("Изменить").onClick(() => {
+        .setDesc(t(`С ${schedule.startDate} · ${periodNames}`, `From ${schedule.startDate} · ${periodNames}`))
+        .addButton((button) => button.setButtonText(t("Изменить", "Edit")).onClick(() => {
           new ScheduleEditorModal(this.plugin, schedule, false).open();
         }))
-        .addButton((button) => button.setDestructive().setButtonText("Архивировать").onClick(() => {
+        .addButton((button) => button.setDestructive().setButtonText(t("Архивировать", "Archive")).onClick(() => {
           schedule.archivedAt = moment().format("YYYY-MM-DD");
           void this.saveAndRefresh();
         }));
@@ -757,17 +807,21 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     });
 
     new Setting(group)
-      .setName("Добавить график")
-      .setDesc(active.length >= 4 ? "Достигнут лимит активных графиков." : "Создать новый независимый цикл.")
+      .setName(t("Добавить график", "Add schedule"))
+      .setDesc(active.length >= 4 ? t("Достигнут лимит активных графиков.", "The active schedule limit has been reached.") : t("Создать новый независимый цикл.", "Create a new independent cycle."))
       .addButton((button) => button
         .setCta()
-        .setButtonText("Создать")
+        .setButtonText(t("Создать", "Create"))
         .setDisabled(active.length >= 4)
         .onClick(() => {
           if (active.length >= 4) return;
           new ScheduleEditorModal(
             this.plugin,
-            createSchedule(moment().format("YYYY-MM-DD")),
+            createSchedule(
+              moment().format("YYYY-MM-DD"),
+              t("Новый график", "New schedule"),
+              t("Новый период", "New period")
+            ),
             true
           ).open();
         }));
@@ -781,8 +835,8 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       attr: { src: authorAvatar, alt: "oxill" }
     });
     const copy = top.createDiv({ cls: "oxill-calendar-author-copy" });
-    copy.createDiv({ cls: "oxill-calendar-author-title", text: "Нравится плагин?" });
-    copy.createEl("p", { text: "Поддержите проект или подпишитесь" });
+    copy.createDiv({ cls: "oxill-calendar-author-title", text: t("Нравится плагин?", "Like the plugin?") });
+    copy.createEl("p", { text: t("Поддержите проект или подпишитесь", "Follow the project and its updates") });
 
     const links = card.createDiv({ cls: "oxill-calendar-social-links" });
     this.addSocialButton(links, "telegram", "Telegram", "https://t.me/oxilldat",
@@ -824,13 +878,13 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     summary.createSpan({ cls: "oxill-calendar-note-chevron", text: "›" });
     summary.createSpan({ cls: "oxill-calendar-note-title", text: label });
     const summaryMeta = kind === "daily" && this.plugin.settings.dailyWeekdayTemplatesEnabled
-      ? "Шаблоны по дням"
-      : config.template ? config.template.split("/").pop() : "Без шаблона";
+      ? t("Шаблоны по дням", "Weekday templates")
+      : config.template ? config.template.split("/").pop() : t("Без шаблона", "No template");
     summary.createSpan({ cls: "oxill-calendar-note-meta", text: summaryMeta });
     const body = details.createDiv({ cls: "oxill-calendar-note-settings-body" });
 
-    new Setting(body).setName("Папка").setDesc("Куда сохранять новые заметки.").addText((text) => {
-      text.setPlaceholder("Начните вводить путь…").setValue(config.folder).onChange((value) => {
+    new Setting(body).setName(t("Папка", "Folder")).setDesc(t("Куда сохранять новые заметки.", "Where new notes are saved.")).addText((text) => {
+      text.setPlaceholder(t("Начните вводить путь…", "Start typing a path…")).setValue(config.folder).onChange((value) => {
         config.folder = value.trim();
         void this.plugin.saveSettings();
       });
@@ -839,14 +893,14 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         void this.plugin.saveSettings();
       });
     });
-    new Setting(body).setName("Формат имени").setDesc("Формат Moment.js для имени файла.").addText((text) =>
+    new Setting(body).setName(t("Формат имени", "Filename format")).setDesc(t("Формат Moment.js для имени файла.", "Moment.js format used for the filename.")).addText((text) =>
       text.setValue(config.format).onChange((value) => {
         config.format = value || config.format;
         void this.plugin.saveSettings();
       })
     );
-    new Setting(body).setName(kind === "daily" ? "Шаблон по умолчанию" : "Шаблон").setDesc("Путь к Markdown-файлу. Оставьте поле пустым, чтобы не применять шаблон.").addText((text) => {
-      text.setPlaceholder("Начните вводить имя файла…").setValue(config.template).onChange((value) => {
+    new Setting(body).setName(kind === "daily" ? t("Шаблон по умолчанию", "Default template") : t("Шаблон", "Template")).setDesc(t("Путь к Markdown-файлу. Оставьте поле пустым, чтобы не применять шаблон.", "Path to a Markdown file. Leave empty to use no template.")).addText((text) => {
+      text.setPlaceholder(t("Начните вводить имя файла…", "Start typing a filename…")).setValue(config.template).onChange((value) => {
         config.template = value.trim();
         void this.plugin.saveSettings();
       });
@@ -858,8 +912,8 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     if (kind === "daily") {
       let weekdayTemplates: HTMLElement;
       new Setting(body)
-        .setName("Отдельные шаблоны по дням недели")
-        .setDesc("Пустое поле использует шаблон по умолчанию.")
+        .setName(t("Отдельные шаблоны по дням недели", "Separate templates by weekday"))
+        .setDesc(t("Пустое поле использует шаблон по умолчанию.", "An empty field uses the default template."))
         .addToggle((toggle) => toggle
           .setValue(this.plugin.settings.dailyWeekdayTemplatesEnabled)
           .onChange((value) => {
@@ -869,11 +923,11 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           }));
       weekdayTemplates = body.createDiv({ cls: "oxill-calendar-weekday-templates" });
       weekdayTemplates.hidden = !this.plugin.settings.dailyWeekdayTemplatesEnabled;
-      WEEKDAYS.forEach((weekday, index) => {
+      weekdays().forEach((weekday, index) => {
         const key = String(index + 1);
         new Setting(weekdayTemplates).setName(weekday).addText((text) => {
           text
-            .setPlaceholder("Шаблон по умолчанию")
+            .setPlaceholder(t("Шаблон по умолчанию", "Default template"))
             .setValue(this.plugin.settings.dailyWeekdayTemplates[key] ?? "")
             .onChange((value) => {
               const path = value.trim();

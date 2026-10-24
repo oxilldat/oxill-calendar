@@ -822,6 +822,171 @@
   padding: 14px var(--size-4-5, 20px);
 }
 
+.oxill-calendar-work-timer-status {
+  align-items: center;
+  display: inline-flex;
+  gap: 3px;
+  line-height: 1;
+}
+
+.oxill-calendar-work-timer-status.is-hidden {
+  display: none;
+}
+
+.oxill-calendar-work-timer-status button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-ui-smaller);
+  height: 16px;
+  line-height: 1;
+  margin: 0;
+  min-height: 0;
+  padding: 0 2px;
+}
+
+.oxill-calendar-work-timer-status button:hover {
+  color: var(--text-normal);
+}
+
+.oxill-calendar-work-timer-pause {
+  width: 16px;
+}
+
+.oxill-calendar-work-timer-pause svg {
+  height: 13px;
+  width: 13px;
+}
+
+.oxill-calendar-work-period-view {
+  padding: 16px;
+}
+
+.oxill-calendar-work-period-heading {
+  margin-bottom: 22px;
+}
+
+.oxill-calendar-work-period-title {
+  font-size: 1.35em;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.oxill-calendar-work-period-subtitle {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.oxill-calendar-work-period-section {
+  margin-top: 18px;
+}
+
+.oxill-calendar-work-period-section-title {
+  align-items: center;
+  color: var(--text-muted);
+  display: flex;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.oxill-calendar-work-period-count {
+  align-items: center;
+  background: var(--background-modifier-hover);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: var(--font-ui-smaller);
+  height: 20px;
+  justify-content: center;
+  min-width: 20px;
+  padding: 0 6px;
+}
+
+.oxill-calendar-work-period-card {
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  margin-bottom: 12px;
+  padding: 14px;
+}
+
+.oxill-calendar-work-period-card-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.oxill-calendar-work-period-time {
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.oxill-calendar-work-period-duration {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  border-radius: 999px;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  font-variant-numeric: tabular-nums;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.oxill-calendar-work-period-description {
+  background: var(--background-primary);
+  border-color: var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-sizing: border-box;
+  box-shadow: none;
+  min-height: 82px;
+  padding: 10px 11px;
+  resize: vertical;
+  width: 100%;
+}
+
+.oxill-calendar-work-period-description:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+}
+
+.oxill-calendar-work-period-actions {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.oxill-calendar-work-period-actions button {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
+}
+
+.oxill-calendar-work-period-save {
+  padding-inline: 12px;
+}
+
+.oxill-calendar-work-period-remove {
+  color: var(--text-muted);
+}
+
+.oxill-calendar-work-period-remove:hover {
+  background: color-mix(in srgb, var(--text-error) 12%, transparent);
+  color: var(--text-error);
+}
+
 @media (max-width: 600px) {
   .oxill-calendar-view {
     padding: 4px;

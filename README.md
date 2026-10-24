@@ -26,7 +26,11 @@ The plugin works locally inside your Obsidian vault. It contains no telemetry an
 - status assignment from the date context menu;
 - bulk status assignment across a date range with a configurable interval;
 - removal of status assignments from a date range or the entire calendar;
-- Russian interface, light and dark themes, desktop and mobile support.
+- optional work-period timer with start, pause and stop controls;
+- a sidebar inbox for describing active and completed work periods;
+- customizable work report templates written to the daily note footer;
+- selectable Russian or English interface;
+- light and dark themes, desktop and mobile support.
 
 ## Use cases
 
@@ -52,6 +56,8 @@ Add `oxilldat/oxill-calendar` to BRAT, install the plugin and enable it in Obsid
 3. Create a schedule, add periods and enter hours for each weekday.
 4. Create custom statuses with names and colors.
 5. Click a date to open its note or right-click it to assign statuses.
+
+To track work sessions, enable **Work periods** in the plugin settings. Start the timer from the status bar, add a description during or after the session, then save the report to the corresponding daily note.
 
 A fresh installation contains no schedules, statuses or user data. Everything is created locally in the settings of the current vault.
 

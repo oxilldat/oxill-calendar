@@ -9,6 +9,7 @@ import {
 } from "obsidian";
 
 import { moment } from "./moment";
+import { t } from "./i18n";
 import { dateForIsoWeekday, startOfWeek } from "./week";
 
 import type {
@@ -68,7 +69,7 @@ async function ensureFolder(app: App, folderPath: string): Promise<void> {
     current = current ? `${current}/${segment}` : segment;
     const existing = app.vault.getAbstractFileByPath(current);
     if (existing instanceof TFolder) continue;
-    if (existing) throw new Error(`Путь «${current}» уже занят файлом`);
+    if (existing) throw new Error(t(`Путь «${current}» уже занят файлом`, `Path “${current}” is already occupied by a file`));
     await app.vault.createFolder(current);
   }
 }
@@ -119,7 +120,7 @@ async function createNote(
   if (templatePath) {
     const templateFile = app.vault.getAbstractFileByPath(normalizePath(templatePath));
     if (!(templateFile instanceof TFile)) {
-      throw new Error(`Шаблон «${templatePath}» не найден`);
+      throw new Error(t(`Шаблон «${templatePath}» не найден`, `Template “${templatePath}” was not found`));
     }
     content = applyTemplate(
       await app.vault.cachedRead(templateFile),
@@ -129,6 +130,19 @@ async function createNote(
     );
   }
   return app.vault.create(path, content);
+}
+
+export async function getOrCreatePeriodicNote(
+  app: App,
+  settings: OxillCalendarSettings,
+  kind: NoteKind,
+  date: Moment
+): Promise<TFile> {
+  const path = getNotePath(settings, kind, date);
+  const existing = app.vault.getAbstractFileByPath(path);
+  if (existing instanceof TFile) return existing;
+  if (existing) throw new Error(t(`Путь «${path}» уже занят папкой`, `Path “${path}” is already occupied by a folder`));
+  return createNote(app, settings, kind, date);
 }
 
 class CreateNoteModal extends Modal {
@@ -141,11 +155,11 @@ class CreateNoteModal extends Modal {
   }
 
   onOpen(): void {
-    this.titleEl.setText("Создать заметку?");
-    this.contentEl.createEl("p", { text: `Заметка «${this.label}» ещё не существует.` });
+    this.titleEl.setText(t("Создать заметку?", "Create note?"));
+    this.contentEl.createEl("p", { text: t(`Заметка «${this.label}» ещё не существует.`, `Note “${this.label}” does not exist yet.`) });
     const buttons = this.contentEl.createDiv({ cls: "oxill-calendar-modal-buttons" });
-    buttons.createEl("button", { text: "Отмена" }).addEventListener("click", () => this.close());
-    const createButton = buttons.createEl("button", { cls: "mod-cta", text: "Создать" });
+    buttons.createEl("button", { text: t("Отмена", "Cancel") }).addEventListener("click", () => this.close());
+    const createButton = buttons.createEl("button", { cls: "mod-cta", text: t("Создать", "Create") });
     createButton.addEventListener("click", () => {
       void this.create(createButton);
     });
@@ -158,7 +172,7 @@ class CreateNoteModal extends Modal {
       this.close();
     } catch (error) {
       button.disabled = false;
-      new Notice(error instanceof Error ? error.message : "Не удалось создать заметку");
+      new Notice(error instanceof Error ? error.message : t("Не удалось создать заметку", "Could not create note"));
     }
   }
 
@@ -193,7 +207,7 @@ export async function openPeriodicNote(
     try {
       await createAndOpen();
     } catch (error) {
-      new Notice(error instanceof Error ? error.message : "Не удалось создать заметку");
+      new Notice(error instanceof Error ? error.message : t("Не удалось создать заметку", "Could not create note"));
     }
     return;
   }

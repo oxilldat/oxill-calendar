@@ -1,5 +1,6 @@
 import type { Moment } from "moment";
 import { moment } from "./moment";
+import { t } from "./i18n";
 
 import type {
   CalendarSchedule,
@@ -50,7 +51,7 @@ export function getDaySchedule(
 export function dayScheduleTooltip(info: DayScheduleInfo): string {
   const parts: string[] = [];
   info.occurrences.forEach((occurrence) => {
-    parts.push(`${occurrence.period.name}, ${occurrence.hours} ч`);
+    parts.push(`${occurrence.period.name}, ${occurrence.hours} ${t("ч", "h")}`);
   });
   return parts.join("\n");
 }

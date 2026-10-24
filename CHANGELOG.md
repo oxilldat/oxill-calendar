@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0
+
+- Added a Russian/English interface language selector.
+- Added an optional persistent work-period timer with start, pause and stop controls.
+- Added a sidebar inbox where active and completed periods can be described before saving.
+- Added customizable report templates with date, time, duration and description placeholders.
+- Added work-period reports to a dedicated footer in the matching daily note.
+- Active timers are restored in a paused state after Obsidian restarts.
+
 ## 1.5.0
 
 - Added optional daily note templates for each weekday with fallback to the default template.

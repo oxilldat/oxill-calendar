@@ -10,17 +10,20 @@ import {
 
 import type OxillCalendarPlugin from "./main";
 import { moment } from "./moment";
+import { getInterfaceLocale, t } from "./i18n";
 import { getNotePath, openPeriodicNote } from "./notes";
 import { dayScheduleTooltip, getDaySchedule } from "./schedule";
 import type { NoteKind } from "./types";
 import { startOfWeek, weekNumber } from "./week";
 
 export const CALENDAR_VIEW_TYPE = "oxill-calendar-view";
-const MONDAY_FIRST_WEEKDAYS = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
-const SUNDAY_FIRST_WEEKDAYS = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
+const MONDAY_FIRST_WEEKDAYS_RU = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+const SUNDAY_FIRST_WEEKDAYS_RU = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
+const MONDAY_FIRST_WEEKDAYS_EN = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const SUNDAY_FIRST_WEEKDAYS_EN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-function shortRussianMonth(date: Moment): string {
-  return new Intl.DateTimeFormat("ru-RU", { month: "short" })
+function shortMonth(date: Moment): string {
+  return new Intl.DateTimeFormat(getInterfaceLocale(), { month: "short" })
     .format(date.toDate())
     .replace(".", "")
     .toUpperCase();
@@ -96,12 +99,12 @@ export class CalendarView extends ItemView {
 
     const menu = new Menu();
     menu.addItem((item) =>
-      item.setTitle("Открыть").setIcon("file-text").onClick(() => {
+      item.setTitle(t("Открыть", "Open")).setIcon("file-text").onClick(() => {
         void openPeriodicNote(this.app, this.plugin.settings, kind, date, false);
       })
     );
     menu.addItem((item) =>
-      item.setTitle("Удалить").setIcon("trash-2").onClick(() => {
+      item.setTitle(t("Удалить", "Delete")).setIcon("trash-2").onClick(() => {
         void this.app.fileManager.trashFile(file);
       })
     );
@@ -115,7 +118,7 @@ export class CalendarView extends ItemView {
 
     if (this.plugin.settings.statuses.length === 0) {
       menu.addItem((item) => item
-        .setTitle("Статусы не настроены")
+        .setTitle(t("Статусы не настроены", "No statuses configured"))
         .setIcon("circle-dot")
         .setDisabled(true));
     } else {
@@ -133,7 +136,7 @@ export class CalendarView extends ItemView {
               else delete this.plugin.settings.dayStatuses[dateKey];
             } else {
               if (current.length >= 3) {
-                new Notice("На один день можно назначить не более трёх статусов");
+                new Notice(t("На один день можно назначить не более трёх статусов", "You can assign no more than three statuses per day"));
                 return;
               }
               this.plugin.settings.dayStatuses[dateKey] = [...current, status.id];
@@ -147,12 +150,12 @@ export class CalendarView extends ItemView {
     const path = getNotePath(this.plugin.settings, "daily", date);
     const file = this.app.vault.getAbstractFileByPath(path);
     menu.addItem((item) => item
-      .setTitle(file instanceof TFile ? "Открыть заметку" : "Создать заметку")
+      .setTitle(file instanceof TFile ? t("Открыть заметку", "Open note") : t("Создать заметку", "Create note"))
       .setIcon("file-text")
       .onClick(() => void openPeriodicNote(this.app, this.plugin.settings, "daily", date, false)));
     if (file instanceof TFile) {
       menu.addItem((item) => item
-        .setTitle("Удалить заметку")
+        .setTitle(t("Удалить заметку", "Delete note"))
         .setIcon("trash-2")
         .onClick(() => void this.app.fileManager.trashFile(file)));
     }
@@ -183,8 +186,8 @@ export class CalendarView extends ItemView {
     const navigation = container.createDiv({ cls: "oxill-calendar-nav" });
     const monthButton = navigation.createEl("button", {
       cls: "oxill-calendar-month",
-      text: `${shortRussianMonth(this.displayedMonth)} ${this.displayedMonth.format("YYYY")}`,
-      attr: { "aria-label": "Открыть месячную заметку" }
+      text: `${shortMonth(this.displayedMonth)} ${this.displayedMonth.format("YYYY")}`,
+      attr: { "aria-label": t("Открыть месячную заметку", "Open monthly note") }
     });
     monthButton.addEventListener("click", (event) => {
       void this.openNote("monthly", this.displayedMonth, event);
@@ -197,7 +200,7 @@ export class CalendarView extends ItemView {
     const controls = navigation.createDiv({ cls: "oxill-calendar-nav-controls" });
     controls.createEl("button", {
       cls: "oxill-calendar-nav-button",
-      attr: { "aria-label": "Предыдущий месяц" },
+      attr: { "aria-label": t("Предыдущий месяц", "Previous month") },
       text: "‹"
     }).addEventListener("click", () => {
       this.displayedMonth.subtract(1, "month");
@@ -206,7 +209,7 @@ export class CalendarView extends ItemView {
 
     controls.createEl("button", {
       cls: "oxill-calendar-today",
-      text: "Сегодня"
+      text: t("Сегодня", "Today")
     }).addEventListener("click", () => {
       this.displayedMonth = moment().startOf("month");
       this.render();
@@ -214,7 +217,7 @@ export class CalendarView extends ItemView {
 
     controls.createEl("button", {
       cls: "oxill-calendar-nav-button",
-      attr: { "aria-label": "Следующий месяц" },
+      attr: { "aria-label": t("Следующий месяц", "Next month") },
       text: "›"
     }).addEventListener("click", () => {
       this.displayedMonth.add(1, "month");
@@ -223,10 +226,10 @@ export class CalendarView extends ItemView {
 
     const table = container.createEl("table", { cls: "oxill-calendar-grid" });
     const head = table.createEl("thead").createEl("tr");
-    head.createEl("th", { text: "НЕД" });
+    head.createEl("th", { text: t("НЕД", "WK") });
     const weekdays = this.plugin.settings.weekStartsOn === "sunday"
-      ? SUNDAY_FIRST_WEEKDAYS
-      : MONDAY_FIRST_WEEKDAYS;
+      ? (this.plugin.settings.language === "en" ? SUNDAY_FIRST_WEEKDAYS_EN : SUNDAY_FIRST_WEEKDAYS_RU)
+      : (this.plugin.settings.language === "en" ? MONDAY_FIRST_WEEKDAYS_EN : MONDAY_FIRST_WEEKDAYS_RU);
     weekdays.forEach((day) => head.createEl("th", { text: day }));
 
     const body = table.createEl("tbody");
@@ -244,7 +247,7 @@ export class CalendarView extends ItemView {
       const weekCell = row.createEl("td", { cls: "oxill-calendar-week-cell" });
       const weekButton = weekCell.createEl("button", {
         text: String(number),
-        attr: { "aria-label": `Открыть заметку недели ${number}` }
+        attr: { "aria-label": t(`Открыть заметку недели ${number}`, `Open note for week ${number}`) }
       });
       if (getNotePath(this.plugin.settings, "weekly", weekDate) === activePath) {
         weekButton.addClass("is-active");
@@ -316,7 +319,7 @@ export class CalendarView extends ItemView {
           dot.style.backgroundColor = status.color;
         });
         if (statusNames.length > 0) {
-          const statusTooltip = `Статусы: ${statusNames.join(", ")}`;
+          const statusTooltip = `${t("Статусы", "Statuses")}: ${statusNames.join(", ")}`;
           button.title = button.title ? `${button.title}\n${statusTooltip}` : statusTooltip;
         }
 

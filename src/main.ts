@@ -2,15 +2,19 @@ import { Notice, Plugin, type WorkspaceLeaf } from "obsidian";
 
 import { openPeriodicNote } from "./notes";
 import { moment } from "./moment";
+import { setInterfaceLanguage, t } from "./i18n";
 import { OxillCalendarSettingTab } from "./settings";
 import {
   createId,
   DEFAULT_SETTINGS,
   type CalendarSchedule,
   type OxillCalendarSettings,
-  type PeriodicNoteSettings
+  type PeriodicNoteSettings,
+  type WorkPeriod
 } from "./types";
 import { CALENDAR_VIEW_TYPE, CalendarView } from "./view";
+import { WorkTimerManager } from "./work-timer";
+import { WORK_PERIOD_VIEW_TYPE, WorkPeriodView } from "./work-period-view";
 
 type LegacySettings = Omit<Partial<OxillCalendarSettings>, "schedules"> & {
   schedules?: LegacySchedule[];
@@ -98,9 +102,26 @@ function migrateSchedules(schedules: LegacySchedule[]): CalendarSchedule[] {
   });
 }
 
+function migrateWorkPeriod(value: unknown): WorkPeriod | null {
+  if (!value || typeof value !== "object") return null;
+  const period = value as Partial<WorkPeriod>;
+  if (typeof period.startedAt !== "string") return null;
+  return {
+    id: typeof period.id === "string" ? period.id : createId("work-period"),
+    startedAt: period.startedAt,
+    endedAt: typeof period.endedAt === "string" ? period.endedAt : null,
+    runningSince: typeof period.runningSince === "string" ? period.runningSince : null,
+    elapsedMs: typeof period.elapsedMs === "number" && Number.isFinite(period.elapsedMs)
+      ? Math.max(0, period.elapsedMs)
+      : 0,
+    description: typeof period.description === "string" ? period.description : ""
+  };
+}
+
 export default class OxillCalendarPlugin extends Plugin {
   settings: OxillCalendarSettings = structuredClone(DEFAULT_SETTINGS);
   settingTab!: OxillCalendarSettingTab;
+  workTimer!: WorkTimerManager;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -109,42 +130,70 @@ export default class OxillCalendarPlugin extends Plugin {
       CALENDAR_VIEW_TYPE,
       (leaf: WorkspaceLeaf) => new CalendarView(leaf, this)
     );
+    this.registerView(
+      WORK_PERIOD_VIEW_TYPE,
+      (leaf: WorkspaceLeaf) => new WorkPeriodView(leaf, this)
+    );
 
-    this.addRibbonIcon("calendar-days", "Открыть Oxill Calendar", () => {
+    this.workTimer = new WorkTimerManager(this);
+    await this.workTimer.restorePaused();
+
+    this.addRibbonIcon("calendar-days", t("Открыть Oxill Calendar", "Open Oxill Calendar"), () => {
       void this.activateView();
+    });
+    this.addRibbonIcon("timer", t("Рабочие периоды", "Work periods"), () => {
+      void this.openWorkPeriodsView();
     });
 
     this.addCommand({
       id: "open-calendar-view",
-      name: "Открыть календарь",
+      name: t("Открыть календарь", "Open calendar"),
       callback: () => void this.activateView()
     });
     this.addCommand({
       id: "open-daily-note",
-      name: "Открыть дневную заметку",
+      name: t("Открыть дневную заметку", "Open daily note"),
       callback: () => void openPeriodicNote(this.app, this.settings, "daily", moment(), false)
     });
     this.addCommand({
       id: "open-weekly-note",
-      name: "Открыть недельную заметку",
+      name: t("Открыть недельную заметку", "Open weekly note"),
       callback: () => void openPeriodicNote(this.app, this.settings, "weekly", moment(), false)
     });
     this.addCommand({
       id: "open-monthly-note",
-      name: "Открыть месячную заметку",
+      name: t("Открыть месячную заметку", "Open monthly note"),
       callback: () => void openPeriodicNote(this.app, this.settings, "monthly", moment(), false)
     });
     this.addCommand({
       id: "reveal-active-note",
-      name: "Показать активную заметку в календаре",
+      name: t("Показать активную заметку в календаре", "Reveal active note in calendar"),
       callback: () => {
         const view = this.getCalendarView();
         if (!view) {
-          new Notice("Сначала откройте Oxill Calendar");
+          new Notice(t("Сначала откройте Oxill Calendar", "Open Oxill Calendar first"));
           return;
         }
         view.revealActiveNote();
       }
+    });
+    this.addCommand({
+      id: "toggle-work-timer",
+      name: t("Запустить или остановить рабочий период", "Start or stop work period"),
+      callback: () => {
+        if (this.settings.activeWorkPeriod) void this.workTimer.stop();
+        else void this.workTimer.start();
+      }
+    });
+    this.addCommand({
+      id: "pause-work-timer",
+      name: t("Поставить рабочий период на паузу или продолжить", "Pause or resume work period"),
+      callback: () => void this.workTimer.togglePause()
+    });
+    this.addCommand({
+      id: "open-work-periods",
+      name: t("Открыть рабочие периоды", "Open work periods"),
+      callback: () => void this.openWorkPeriodsView()
     });
 
     this.settingTab = new OxillCalendarSettingTab(this.app, this);
@@ -167,6 +216,7 @@ export default class OxillCalendarPlugin extends Plugin {
     });
 
     this.settings = {
+      language: raw?.language === "en" ? "en" : "ru",
       confirmBeforeCreate:
         raw?.confirmBeforeCreate ?? raw?.shouldConfirmBeforeCreate ?? DEFAULT_SETTINGS.confirmBeforeCreate,
       calendarNumberColorLight: typeof raw?.calendarNumberColorLight === "string"
@@ -181,6 +231,16 @@ export default class OxillCalendarPlugin extends Plugin {
         ? Object.fromEntries(Object.entries(raw.dailyWeekdayTemplates)
           .filter(([weekday, path]) => /^[1-7]$/.test(weekday) && typeof path === "string"))
         : {},
+      workTimerEnabled: raw?.workTimerEnabled === true,
+      workPeriodReportTemplate: typeof raw?.workPeriodReportTemplate === "string"
+        ? raw.workPeriodReportTemplate
+        : DEFAULT_SETTINGS.workPeriodReportTemplate,
+      activeWorkPeriod: migrateWorkPeriod(raw?.activeWorkPeriod),
+      pendingWorkPeriods: Array.isArray(raw?.pendingWorkPeriods)
+        ? raw.pendingWorkPeriods
+          .map((period) => migrateWorkPeriod(period))
+          .filter((period): period is WorkPeriod => period !== null)
+        : [],
       noteIndicatorColor: typeof raw?.noteIndicatorColor === "string"
         ? raw.noteIndicatorColor
         : DEFAULT_SETTINGS.noteIndicatorColor,
@@ -206,6 +266,7 @@ export default class OxillCalendarPlugin extends Plugin {
         ]))
         : {}
     };
+    setInterfaceLanguage(this.settings.language);
     await this.saveData(this.settings);
   }
 
@@ -221,6 +282,23 @@ export default class OxillCalendarPlugin extends Plugin {
       if (leaf.view instanceof CalendarView) return leaf.view;
     }
     return null;
+  }
+
+  refreshWorkPeriodViews(): void {
+    this.app.workspace.getLeavesOfType(WORK_PERIOD_VIEW_TYPE).forEach((leaf) => {
+      if (leaf.view instanceof WorkPeriodView) leaf.view.refresh();
+    });
+  }
+
+  async openWorkPeriodsView(): Promise<void> {
+    let leaf: WorkspaceLeaf | null =
+      this.app.workspace.getLeavesOfType(WORK_PERIOD_VIEW_TYPE)[0] ?? null;
+    if (!leaf) {
+      leaf = this.app.workspace.getRightLeaf(true);
+      if (!leaf) return;
+      await leaf.setViewState({ type: WORK_PERIOD_VIEW_TYPE, active: true });
+    }
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   private async activateView(): Promise<void> {
