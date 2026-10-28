@@ -519,7 +519,9 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.addClass("oxill-calendar-settings");
 
-    const generalGroup = this.createGroup(t("Основное", "General"));
+    const generalGroup = this.rootEl.createDiv({
+      cls: "oxill-calendar-settings-general"
+    });
     new Setting(generalGroup)
       .setName(t("Язык интерфейса", "Interface language"))
       .setDesc(t("Язык календаря, настроек и уведомлений плагина.", "Language used by the calendar, settings and plugin notices."))
@@ -845,6 +847,19 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       "m13.1 2-3.8 7.4 2.5.1-3.7 6.7 3.4.1L9.7 22c5.5-1.8 9-5.2 9-9.2 0-2.8-1.8-4.8-4.5-5.5L16.6 2h-3.5Zm-.8 17.1 1.2-4.4-2.6-.1 3.4-6.2c1.6.5 2.6 1.8 2.6 3.7 0 2.7-1.7 5-4.6 7Z");
     this.addSocialButton(links, "youtube", "YouTube", "https://www.youtube.com/@oxilldat",
       "M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4L15.8 12l-6.2 3.6Z");
+
+    const source = this.rootEl.createDiv({ cls: "oxill-calendar-author-source" });
+    source.createSpan({
+      text: `${t("Этот плагин сделан на основе плагина", "This plugin is based on")} `
+    });
+    source.createEl("a", {
+      text: "Calendar",
+      attr: {
+        href: "https://github.com/liamcain/obsidian-calendar-plugin",
+        target: "_blank",
+        rel: "noopener noreferrer"
+      }
+    });
   }
 
   private addSocialButton(
@@ -944,16 +959,6 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     }
   }
 
-  private createHeading(name: string, description?: string): void {
-    new Setting(this.rootEl).setName(name).setHeading();
-    if (description) {
-      this.rootEl.createDiv({
-        cls: "oxill-calendar-section-description",
-        text: description
-      });
-    }
-  }
-
   private createSection(
     key: string,
     name: string,
@@ -976,10 +981,5 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       else this.openSections.delete(key);
     });
     return details.createDiv({ cls: "oxill-calendar-settings-section-body" });
-  }
-
-  private createGroup(name: string, description?: string): HTMLElement {
-    this.createHeading(name, description);
-    return this.rootEl.createDiv({ cls: "oxill-calendar-settings-group" });
   }
 }

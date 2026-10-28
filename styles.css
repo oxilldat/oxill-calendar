@@ -269,6 +269,22 @@
 .oxill-calendar-social-button.is-youtube { background: #f00; }
 .oxill-calendar-social-button svg { fill: currentColor; height: 19px; width: 19px; }
 
+.oxill-calendar-author-source {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  margin: 9px auto 0;
+  text-align: center;
+}
+
+.oxill-calendar-author-source a {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+
+.oxill-calendar-author-source a:hover {
+  text-decoration: underline;
+}
+
 .oxill-calendar-statuses-group .setting-item {
   padding-bottom: 9px;
   padding-top: 9px;
@@ -291,10 +307,42 @@
 
 /* Настройки повторяют общий стиль плагинов Oxill: заголовок секции снаружи,
    а строки — внутри цельной карточки. */
+.setting-group .setting-item.oxill-calendar-settings-host,
 .oxill-calendar-settings-host {
+  --setting-items-background: transparent;
+  background: transparent;
   border: 0;
+  border-radius: 0;
+  box-shadow: none;
   display: block;
+  margin: 0;
   padding: 0;
+}
+
+.setting-group:has(.oxill-calendar-settings-host),
+.setting-items:has(> .oxill-calendar-settings-host) {
+  --setting-items-background: transparent;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.setting-group .setting-item.oxill-calendar-settings-host::before,
+.oxill-calendar-settings-host::before {
+  content: none;
+}
+
+.oxill-calendar-settings {
+  background: transparent;
+}
+
+.oxill-calendar-settings-general,
+.oxill-calendar-settings-general .setting-item {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .oxill-calendar-settings > .setting-item-heading {

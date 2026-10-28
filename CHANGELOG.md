@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.1
+
+- Removed the shared background card from the settings page while preserving individual collapsible section cards.
+- Simplified the top settings area to native Obsidian rows without an extra heading or background.
+- Listed Oxill as the plugin author and moved the original Calendar attribution below the contact card.
+
 ## 1.6.0
 
 - Added a Russian/English interface language selector.
