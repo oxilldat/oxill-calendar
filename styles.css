@@ -1035,6 +1035,31 @@
   color: var(--text-error);
 }
 
+.oxill-calendar-template-help {
+  display: grid;
+  gap: 0;
+  margin-top: 14px;
+}
+
+.oxill-calendar-template-help-row {
+  align-items: baseline;
+  border-top: 1px solid var(--background-modifier-border);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(150px, max-content) minmax(0, 1fr);
+  padding: 10px 0;
+}
+
+.oxill-calendar-template-help-row code {
+  color: var(--text-accent);
+  white-space: nowrap;
+}
+
+.oxill-calendar-template-help-row span {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
 @media (max-width: 600px) {
   .oxill-calendar-view {
     padding: 4px;

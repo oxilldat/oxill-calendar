@@ -1,9 +1,17 @@
 {
   "name": "oxill-calendar",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "Obsidian calendar for periodic notes, recurring schedules and day statuses",
   "repository": "https://github.com/oxilldat/oxill-calendar",
-  "keywords": ["obsidian", "calendar", "daily-notes", "weekly-notes", "schedule", "shift-work", "status-tracker"],
+  "keywords": [
+    "obsidian",
+    "calendar",
+    "daily-notes",
+    "weekly-notes",
+    "schedule",
+    "shift-work",
+    "status-tracker"
+  ],
   "author": "Oxill",
   "main": "main.js",
   "license": "MIT",

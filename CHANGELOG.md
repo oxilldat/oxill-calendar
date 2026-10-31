@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.0
+
+- Added a `+` button that creates and selects a basic work-period report template in the vault root.
+- Replaced the inline work-period report template with a searchable Markdown template file selector.
+- Added an information dialog describing all supported `{{variable}}` constructions and date/time formats.
+- Preserved the previous inline report template as a backward-compatible fallback until a file is selected.
+
 ## 1.6.1
 
 - Removed the shared background card from the settings page while preserving individual collapsible section cards.

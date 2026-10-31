@@ -47,6 +47,7 @@ export interface OxillCalendarSettings {
   dailyWeekdayTemplatesEnabled: boolean;
   dailyWeekdayTemplates: Record<string, string>;
   workTimerEnabled: boolean;
+  workPeriodReportTemplateFile: string;
   workPeriodReportTemplate: string;
   activeWorkPeriod: WorkPeriod | null;
   pendingWorkPeriods: WorkPeriod[];
@@ -79,6 +80,7 @@ export const DEFAULT_SETTINGS: OxillCalendarSettings = {
   dailyWeekdayTemplatesEnabled: false,
   dailyWeekdayTemplates: {},
   workTimerEnabled: false,
+  workPeriodReportTemplateFile: "",
   workPeriodReportTemplate: "- {{start}}–{{end}} · {{duration}} — {{description}}",
   activeWorkPeriod: null,
   pendingWorkPeriods: [],

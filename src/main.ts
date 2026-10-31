@@ -232,6 +232,9 @@ export default class OxillCalendarPlugin extends Plugin {
           .filter(([weekday, path]) => /^[1-7]$/.test(weekday) && typeof path === "string"))
         : {},
       workTimerEnabled: raw?.workTimerEnabled === true,
+      workPeriodReportTemplateFile: typeof raw?.workPeriodReportTemplateFile === "string"
+        ? raw.workPeriodReportTemplateFile
+        : DEFAULT_SETTINGS.workPeriodReportTemplateFile,
       workPeriodReportTemplate: typeof raw?.workPeriodReportTemplate === "string"
         ? raw.workPeriodReportTemplate
         : DEFAULT_SETTINGS.workPeriodReportTemplate,

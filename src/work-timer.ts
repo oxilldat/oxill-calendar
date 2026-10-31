@@ -1,4 +1,4 @@
-import { Notice, setIcon } from "obsidian";
+import { Notice, TFile, normalizePath, setIcon } from "obsidian";
 
 import type OxillCalendarPlugin from "./main";
 import { moment } from "./moment";
@@ -175,8 +175,9 @@ export class WorkTimerManager {
     }
     try {
       const date = moment(period.startedAt);
+      const template = await this.loadReportTemplate();
+      const report = renderReport(template, period).trim();
       const file = await getOrCreatePeriodicNote(this.plugin.app, this.plugin.settings, "daily", date);
-      const report = renderReport(this.plugin.settings.workPeriodReportTemplate, period).trim();
       await this.plugin.app.vault.process(file, (content) => {
         if (content.includes(LOG_START) && content.includes(LOG_END)) {
           return content.replace(LOG_END, `${report}\n${LOG_END}`);
@@ -193,6 +194,25 @@ export class WorkTimerManager {
     } catch (error) {
       new Notice(error instanceof Error ? error.message : t("Не удалось записать рабочий период", "Could not save the work period"));
     }
+  }
+
+  private async loadReportTemplate(): Promise<string> {
+    const templatePath = this.plugin.settings.workPeriodReportTemplateFile.trim();
+    if (!templatePath) return this.plugin.settings.workPeriodReportTemplate;
+
+    const templateFile = this.plugin.app.vault.getAbstractFileByPath(normalizePath(templatePath));
+    if (!(templateFile instanceof TFile)) {
+      throw new Error(t(
+        `Шаблон отчёта «${templatePath}» не найден`,
+        `Report template “${templatePath}” was not found`
+      ));
+    }
+
+    const content = await this.plugin.app.vault.cachedRead(templateFile);
+    if (!content.trim()) {
+      throw new Error(t("Файл шаблона отчёта пуст", "The report template file is empty"));
+    }
+    return content;
   }
 
   refresh(): void {

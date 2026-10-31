@@ -4,6 +4,8 @@ import {
   PluginSettingTab,
   Setting,
   type SettingDefinitionItem,
+  TFile,
+  normalizePath,
   setIcon
 } from "obsidian";
 import type { Moment } from "moment";
@@ -189,6 +191,37 @@ class ClearStatusesModal extends Modal {
     await this.plugin.saveSettings();
     this.close();
     new Notice(t(`Удалено назначений: ${removed}`, `Assignments removed: ${removed}`));
+  }
+}
+
+class WorkReportTemplateHelpModal extends Modal {
+  onOpen(): void {
+    this.titleEl.setText(t("Конструкции шаблона отчёта", "Report template variables"));
+    this.contentEl.createEl("p", {
+      cls: "setting-item-description",
+      text: t(
+        "Добавьте конструкции в Markdown-файл шаблона. При сохранении периода они заменятся данными сессии.",
+        "Add these variables to the Markdown template file. They are replaced with session data when the period is saved."
+      )
+    });
+
+    const variables: Array<[string, string]> = [
+      ["{{date}}", t("Дата начала: YYYY-MM-DD", "Start date: YYYY-MM-DD")],
+      ["{{date:DD.MM.YYYY}}", t("Дата в указанном формате Moment.js", "Date using the specified Moment.js format")],
+      ["{{start}}", t("Время начала: HH:mm", "Start time: HH:mm")],
+      ["{{start:HH:mm:ss}}", t("Время начала в указанном формате", "Start time using the specified format")],
+      ["{{end}}", t("Время окончания: HH:mm", "End time: HH:mm")],
+      ["{{end:HH:mm:ss}}", t("Время окончания в указанном формате", "End time using the specified format")],
+      ["{{duration}}", t("Продолжительность периода", "Period duration")],
+      ["{{description}}", t("Описание выполненной работы", "Description of completed work")]
+    ];
+
+    const list = this.contentEl.createDiv({ cls: "oxill-calendar-template-help" });
+    variables.forEach(([variable, description]) => {
+      const row = list.createDiv({ cls: "oxill-calendar-template-help-row" });
+      row.createEl("code", { text: variable });
+      row.createSpan({ text: description });
+    });
   }
 }
 
@@ -611,16 +644,36 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       .addToggle((toggle) => toggle
         .setValue(this.plugin.settings.workTimerEnabled)
         .onChange((value) => void this.plugin.workTimer.setEnabled(value)));
+    let reportTemplateInput: HTMLInputElement | null = null;
     new Setting(workTimerGroup)
       .setName(t("Шаблон отчёта", "Report template"))
-      .setDesc(t("Переменные: {{date}}, {{start}}, {{end}}, {{duration}}, {{description}}. Для даты и времени можно указать формат после двоеточия.", "Variables: {{date}}, {{start}}, {{end}}, {{duration}}, {{description}}. Add a format after a colon for date and time values."))
-      .addTextArea((text) => text
-        .setPlaceholder("- {{start}}–{{end}} · {{duration}} — {{description}}")
-        .setValue(this.plugin.settings.workPeriodReportTemplate)
-        .onChange((value) => {
-          this.plugin.settings.workPeriodReportTemplate = value;
+      .setDesc(t("Markdown-файл, из которого формируется запись рабочего периода.", "Markdown file used to create a work-period entry."))
+      .addText((text) => {
+        reportTemplateInput = text.inputEl;
+        text
+          .setPlaceholder(t("Начните вводить имя файла…", "Start typing a filename…"))
+          .setValue(this.plugin.settings.workPeriodReportTemplateFile)
+          .onChange((value) => {
+            this.plugin.settings.workPeriodReportTemplateFile = value.trim();
+            void this.plugin.saveSettings();
+          });
+        new MarkdownFileSuggest(this.app, text.inputEl, (path) => {
+          this.plugin.settings.workPeriodReportTemplateFile = path;
           void this.plugin.saveSettings();
-        }));
+        });
+      })
+      .addExtraButton((button) => button
+        .setIcon("plus")
+        .setTooltip(t("Создать базовый шаблон в корне", "Create a basic template in the vault root"))
+        .onClick(() => {
+          void this.createBaseWorkReportTemplate().then((path) => {
+            if (path && reportTemplateInput) reportTemplateInput.value = path;
+          });
+        }))
+      .addExtraButton((button) => button
+        .setIcon("info")
+        .setTooltip(t("Конструкции шаблона", "Template variables"))
+        .onClick(() => new WorkReportTemplateHelpModal(this.app).open()));
     new Setting(workTimerGroup)
       .setName(t("Незаполненные периоды", "Unfinished reports"))
       .setDesc(t(`Ожидают отчёта: ${this.plugin.settings.pendingWorkPeriods.length}`, `Awaiting report: ${this.plugin.settings.pendingWorkPeriods.length}`))
@@ -772,6 +825,33 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
   private async saveAndRefresh(): Promise<void> {
     await this.plugin.saveSettings();
     this.refreshPreservingScroll();
+  }
+
+  private async createBaseWorkReportTemplate(): Promise<string | null> {
+    const path = normalizePath(t("Шаблон рабочих периодов.md", "Work period template.md"));
+    const existing = this.app.vault.getAbstractFileByPath(path);
+
+    if (existing && !(existing instanceof TFile)) {
+      new Notice(t(`Не удалось создать шаблон: «${path}» уже занято папкой`, `Could not create the template: “${path}” is already used by a folder`));
+      return null;
+    }
+
+    try {
+      if (!existing) {
+        await this.app.vault.create(path, "- {{start}}–{{end}} · {{duration}} — {{description}}\n");
+        new Notice(t("Базовый шаблон создан в корне хранилища", "A basic template was created in the vault root"));
+      } else {
+        new Notice(t("Базовый шаблон уже существует и выбран", "The basic template already exists and was selected"));
+      }
+
+      this.plugin.settings.workPeriodReportTemplateFile = path;
+      await this.plugin.saveSettings();
+      return path;
+    } catch (error) {
+      console.error("Oxill Calendar: failed to create the work-period template", error);
+      new Notice(t("Не удалось создать базовый шаблон", "Could not create the basic template"));
+      return null;
+    }
   }
 
   private renderScheduleSection(): void {
