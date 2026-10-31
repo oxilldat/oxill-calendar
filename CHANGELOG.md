@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.1
+
+- Fixed duplicate calendar panes appearing after the plugin is updated or reloaded.
+
 ## 1.7.0
 
 - Added a `+` button that creates and selects a basic work-period report template in the vault root.

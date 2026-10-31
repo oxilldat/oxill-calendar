@@ -199,7 +199,6 @@ export default class OxillCalendarPlugin extends Plugin {
     this.settingTab = new OxillCalendarSettingTab(this.app, this);
     this.addSettingTab(this.settingTab);
 
-    this.app.workspace.onLayoutReady(() => void this.activateView());
   }
 
   async loadSettings(): Promise<void> {
