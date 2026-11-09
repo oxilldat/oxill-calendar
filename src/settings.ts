@@ -58,7 +58,9 @@ class StatusPeriodModal extends Modal {
       text: t("Статус будет назначен от начальной до конечной даты включительно.", "The status will be assigned from the start date through the end date, inclusive.")
     });
     new Setting(this.contentEl).setName(t("Статус", "Status")).addDropdown((dropdown) => {
-      this.plugin.settings.statuses.forEach((status) => dropdown.addOption(status.id, status.name));
+      this.plugin.settings.statuses.forEach((status) => {
+        dropdown.addOption(status.id, status.name);
+      });
       dropdown.setValue(this.statusId).onChange((value) => { this.statusId = value; });
     });
     this.addDateSetting(t("С даты", "From"), this.startDate, (value) => { this.startDate = value; });
@@ -542,6 +544,9 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       render: (setting) => {
         setting.settingEl.empty();
         setting.settingEl.addClass("oxill-calendar-settings-host");
+        setting.settingEl.parentElement?.addClass("oxill-calendar-settings-items-host");
+        setting.settingEl.parentElement?.closest(".setting-group")
+          ?.addClass("oxill-calendar-settings-group-host");
         this.renderSettings(setting.settingEl);
       }
     }];
@@ -649,7 +654,6 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       .addSlider((slider) => slider
         .setLimits(0.5, 1.5, 0.1)
         .setValue(this.plugin.settings.noteIndicatorBorderWidth)
-        .setDynamicTooltip()
         .onChange((value) => {
           this.plugin.settings.noteIndicatorBorderWidth = value;
           void this.plugin.saveSettings();

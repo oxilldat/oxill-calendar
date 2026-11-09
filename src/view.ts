@@ -382,9 +382,9 @@ export class CalendarView extends ItemView {
                 : colors.length === 3
                   ? [colors[0], colors[1], colors[2], colors[0]]
                   : colors.slice(0, 4);
-            button.style.borderStyle = "solid";
-            button.style.borderWidth = "2px";
-            button.style.borderColor = borderColors.join(" ");
+            button.setCssProps({
+              "--oxill-schedule-border-colors": borderColors.join(" ")
+            });
             button.addClass("has-schedule-outline");
           } else if (colors.length === 1) {
             button.style.background = colors[0];

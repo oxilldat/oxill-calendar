@@ -326,14 +326,20 @@
   padding: 0;
 }
 
-.setting-group:has(.oxill-calendar-settings-host),
-.setting-items:has(> .oxill-calendar-settings-host) {
+.oxill-calendar-settings-group-host,
+.oxill-calendar-settings-items-host {
   --setting-items-background: transparent;
   background: transparent;
   border: 0;
   border-radius: 0;
   box-shadow: none;
   padding: 0;
+}
+
+.oxill-calendar-day.has-schedule-outline {
+  border-color: var(--oxill-schedule-border-colors);
+  border-style: solid;
+  border-width: 2px;
 }
 
 .setting-group .setting-item.oxill-calendar-settings-host::before,

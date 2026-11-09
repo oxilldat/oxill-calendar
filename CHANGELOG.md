@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.1
+
+- Fixed Obsidian automated-review errors and warnings for styles, async callbacks, deprecated slider APIs and broad CSS selectors.
+
 ## 1.8.0
 
 - Reorganized all settings into focused collapsible sections that are closed by default.
