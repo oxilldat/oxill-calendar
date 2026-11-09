@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.3
+
+- Fixed schedule outlines being hidden by the base calendar-day border style.
+
 ## 1.8.2
 
 - Fixed the settings page jumping to the top after selecting a suggested folder or template file.
