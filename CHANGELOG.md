@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.2
+
+- Fixed the settings page jumping to the top after selecting a suggested folder or template file.
+
 ## 1.8.1
 
 - Fixed Obsidian automated-review errors and warnings for styles, async callbacks, deprecated slider APIs and broad CSS selectors.

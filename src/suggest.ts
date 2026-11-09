@@ -9,9 +9,23 @@ class VaultPathSuggest<T extends TFile | TFolder> extends AbstractInputSuggest<T
   ) {
     super(app, inputEl);
     this.onSelect((item) => {
-      this.setValue(item.path);
+      const scrollPositions: Array<{ element: HTMLElement; scrollTop: number }> = [];
+      let parent = inputEl.parentElement;
+      while (parent) {
+        if (parent.scrollHeight > parent.clientHeight) {
+          scrollPositions.push({ element: parent, scrollTop: parent.scrollTop });
+        }
+        parent = parent.parentElement;
+      }
+
+      inputEl.value = item.path;
       this.onChoose(item.path);
       this.close();
+      window.requestAnimationFrame(() => {
+        scrollPositions.forEach(({ element, scrollTop }) => {
+          element.scrollTop = scrollTop;
+        });
+      });
     });
   }
 
