@@ -12,8 +12,8 @@ import type OxillCalendarPlugin from "./main";
 import { moment } from "./moment";
 import { getInterfaceLocale, t } from "./i18n";
 import { getNotePath, openPeriodicNote } from "./notes";
-import { dayScheduleTooltip, getDaySchedule } from "./schedule";
-import type { NoteKind } from "./types";
+import { dayScheduleTooltip, getDaySchedule, getSchedulesForDate } from "./schedule";
+import type { CalendarSchedule, NoteKind } from "./types";
 import { startOfWeek, weekNumber } from "./week";
 
 export const CALENDAR_VIEW_TYPE = "oxill-calendar-view";
@@ -146,6 +146,32 @@ export class CalendarView extends ItemView {
       });
     }
 
+    const schedules = getSchedulesForDate(this.plugin.settings, date);
+    if (schedules.length > 0) {
+      menu.addSeparator();
+      const overrides = this.plugin.settings.dayScheduleOverrides[dateKey] ?? {};
+      menu.addItem((item) => item
+        .setTitle(t("Отключить графики на этот день", "Disable schedules for this day"))
+        .setIcon("circle-off")
+        .setChecked(schedules.every((schedule) => overrides[schedule.id] === null))
+        .onClick(() => {
+          this.plugin.settings.dayScheduleOverrides[dateKey] = Object.fromEntries(
+            schedules.map((schedule) => [schedule.id, null])
+          );
+          void this.plugin.saveSettings();
+        }));
+      schedules.forEach((schedule) => {
+        menu.addItem((item) => {
+          item.setTitle(schedule.name).setIcon("calendar-range");
+          // Obsidian supports native submenus at runtime, but the method is not
+          // included in the public typings yet. Keep a second-menu fallback.
+          const submenu = (item as unknown as { setSubmenu?: () => Menu }).setSubmenu?.();
+          if (submenu) this.populatePeriodMenu(submenu, schedule, dateKey);
+          else item.onClick(() => this.showPeriodMenu(schedule, dateKey, event));
+        });
+      });
+    }
+
     menu.addSeparator();
     const path = getNotePath(this.plugin.settings, "daily", date);
     const file = this.app.vault.getAbstractFileByPath(path);
@@ -160,6 +186,54 @@ export class CalendarView extends ItemView {
         .onClick(() => void this.app.fileManager.trashFile(file)));
     }
     menu.showAtMouseEvent(event);
+  }
+
+  private showPeriodMenu(schedule: CalendarSchedule, dateKey: string, event: MouseEvent): void {
+    const menu = new Menu();
+    this.populatePeriodMenu(menu, schedule, dateKey);
+    menu.showAtMouseEvent(event);
+  }
+
+  private populatePeriodMenu(menu: Menu, schedule: CalendarSchedule, dateKey: string): void {
+    const overrides = this.plugin.settings.dayScheduleOverrides[dateKey];
+    const hasOverride = Boolean(overrides)
+      && Object.prototype.hasOwnProperty.call(overrides, schedule.id);
+    const selectedPeriodId = hasOverride ? overrides[schedule.id] : undefined;
+
+    menu.addItem((item) => item
+      .setTitle(t("Автоматически", "Automatic"))
+      .setIcon("rotate-ccw")
+      .setChecked(!hasOverride)
+      .onClick(() => this.setScheduleOverride(dateKey, schedule.id, undefined)));
+    menu.addItem((item) => item
+      .setTitle(t("Отключить", "Disable"))
+      .setIcon("circle-off")
+      .setChecked(selectedPeriodId === null)
+      .onClick(() => this.setScheduleOverride(dateKey, schedule.id, null)));
+    menu.addSeparator();
+    schedule.periods.forEach((period) => {
+      menu.addItem((item) => item
+        .setTitle(period.name)
+        .setIcon("repeat-2")
+        .setChecked(selectedPeriodId === period.id)
+        .onClick(() => this.setScheduleOverride(dateKey, schedule.id, period.id)));
+    });
+  }
+
+  private setScheduleOverride(
+    dateKey: string,
+    scheduleId: string,
+    periodId: string | null | undefined
+  ): void {
+    const overrides = { ...(this.plugin.settings.dayScheduleOverrides[dateKey] ?? {}) };
+    if (periodId === undefined) delete overrides[scheduleId];
+    else overrides[scheduleId] = periodId;
+    if (Object.keys(overrides).length > 0) {
+      this.plugin.settings.dayScheduleOverrides[dateKey] = overrides;
+    } else {
+      delete this.plugin.settings.dayScheduleOverrides[dateKey];
+    }
+    void this.plugin.saveSettings();
   }
 
   private render(): void {
@@ -181,6 +255,10 @@ export class CalendarView extends ItemView {
     container.style.setProperty(
       "--oxill-note-indicator-border-width",
       `${this.plugin.settings.noteIndicatorBorderWidth}px`
+    );
+    container.style.setProperty(
+      "--oxill-status-border-width",
+      this.plugin.settings.statusOutlineEnabled ? "1px" : "0px"
     );
 
     const navigation = container.createDiv({ cls: "oxill-calendar-nav" });
@@ -268,7 +346,12 @@ export class CalendarView extends ItemView {
           attr: { "aria-label": date.format("DD.MM.YYYY") }
         });
 
-        if (!date.isSame(this.displayedMonth, "month")) button.addClass("is-adjacent");
+        const isAdjacent = !date.isSame(this.displayedMonth, "month");
+        if (isAdjacent) button.addClass("is-adjacent");
+        if (isAdjacent && this.plugin.settings.showOnlyCurrentMonth) {
+          button.addClass("is-hidden-adjacent");
+          continue;
+        }
         if (date.isSame(today, "day")) button.addClass("is-today");
 
         const notePath = getNotePath(this.plugin.settings, "daily", date);
@@ -291,7 +374,19 @@ export class CalendarView extends ItemView {
           const colors = schedule.occurrences.map((occurrence) =>
             occurrence.period.color
           );
-          if (colors.length === 1) {
+          if (this.plugin.settings.scheduleDisplayMode === "outline") {
+            const borderColors = colors.length === 1
+              ? [colors[0], colors[0], colors[0], colors[0]]
+              : colors.length === 2
+                ? [colors[0], colors[1], colors[1], colors[0]]
+                : colors.length === 3
+                  ? [colors[0], colors[1], colors[2], colors[0]]
+                  : colors.slice(0, 4);
+            button.style.borderStyle = "solid";
+            button.style.borderWidth = "2px";
+            button.style.borderColor = borderColors.join(" ");
+            button.addClass("has-schedule-outline");
+          } else if (colors.length === 1) {
             button.style.background = colors[0];
             button.addClass("has-work-schedule");
           } else if (colors.length === 2) {

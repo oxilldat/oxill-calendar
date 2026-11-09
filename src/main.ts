@@ -225,6 +225,9 @@ export default class OxillCalendarPlugin extends Plugin {
         ? raw.calendarNumberColorDark
         : DEFAULT_SETTINGS.calendarNumberColorDark,
       weekStartsOn: raw?.weekStartsOn === "sunday" ? "sunday" : "monday",
+      showOnlyCurrentMonth: raw?.showOnlyCurrentMonth === true,
+      scheduleDisplayMode: raw?.scheduleDisplayMode === "fill" ? "fill" : "outline",
+      statusOutlineEnabled: raw?.statusOutlineEnabled !== false,
       dailyWeekdayTemplatesEnabled: raw?.dailyWeekdayTemplatesEnabled === true,
       dailyWeekdayTemplates: raw?.dailyWeekdayTemplates && typeof raw.dailyWeekdayTemplates === "object"
         ? Object.fromEntries(Object.entries(raw.dailyWeekdayTemplates)
@@ -266,6 +269,15 @@ export default class OxillCalendarPlugin extends Plugin {
           date,
           Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string").slice(0, 3) : []
         ]))
+        : {},
+      dayScheduleOverrides: raw?.dayScheduleOverrides && typeof raw.dayScheduleOverrides === "object"
+        ? Object.fromEntries(Object.entries(raw.dayScheduleOverrides)
+          .filter(([, overrides]) => overrides && typeof overrides === "object")
+          .map(([date, overrides]) => [
+            date,
+            Object.fromEntries(Object.entries(overrides as Record<string, unknown>)
+              .filter(([, periodId]) => periodId === null || typeof periodId === "string"))
+          ])) as Record<string, Record<string, string | null>>
         : {}
     };
     setInterfaceLanguage(this.settings.language);

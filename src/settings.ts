@@ -552,8 +552,14 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.addClass("oxill-calendar-settings");
 
-    const generalGroup = this.rootEl.createDiv({
-      cls: "oxill-calendar-settings-general"
+    const interfaceSection = this.createSection(
+      "interface",
+      t("Интерфейс календаря", "Calendar interface"),
+      t("Вид календаря, цвета и поведение сетки.", "Calendar appearance, colors and grid behavior."),
+      t("9 параметров", "9 options")
+    );
+    const generalGroup = interfaceSection.createDiv({
+      cls: "oxill-calendar-settings-group"
     });
     new Setting(generalGroup)
       .setName(t("Язык интерфейса", "Interface language"))
@@ -571,15 +577,6 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           });
         }));
     new Setting(generalGroup)
-      .setName(t("Подтверждать создание заметки", "Confirm note creation"))
-      .setDesc(t("Показывать запрос перед созданием отсутствующей периодической заметки.", "Ask before creating a missing periodic note."))
-      .addToggle((toggle) => toggle
-        .setValue(this.plugin.settings.confirmBeforeCreate)
-        .onChange((value) => {
-          this.plugin.settings.confirmBeforeCreate = value;
-          void this.plugin.saveSettings();
-        }));
-    new Setting(generalGroup)
       .setName(t("Начало недели", "First day of week"))
       .setDesc(t("Влияет на календарь, недельные заметки и смену периодов графика.", "Affects the calendar, weekly notes and schedule period rotation."))
       .addDropdown((dropdown) => dropdown
@@ -589,6 +586,35 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         .onChange((value) => {
           this.plugin.settings.weekStartsOn = value === "sunday" ? "sunday" : "monday";
           void this.plugin.saveSettings();
+        }));
+    new Setting(generalGroup)
+      .setName(t("Только дни текущего месяца", "Current-month days only"))
+      .setDesc(t("Скрывать даты соседних месяцев в сетке календаря.", "Hide dates from adjacent months in the calendar grid."))
+      .addToggle((toggle) => toggle
+        .setValue(this.plugin.settings.showOnlyCurrentMonth)
+        .onChange((value) => {
+          this.plugin.settings.showOnlyCurrentMonth = value;
+          void this.plugin.saveSettings();
+        }));
+    new Setting(generalGroup)
+      .setName(t("Отображение графиков", "Schedule appearance"))
+      .setDesc(t("Показывать цвет периода обводкой или полной заливкой дня.", "Show period colors as an outline or a full day fill."))
+      .addDropdown((dropdown) => dropdown
+        .addOption("outline", t("Цветная обводка", "Colored outline"))
+        .addOption("fill", t("Полная заливка", "Full fill"))
+        .setValue(this.plugin.settings.scheduleDisplayMode)
+        .onChange((value) => {
+          this.plugin.settings.scheduleDisplayMode = value === "fill" ? "fill" : "outline";
+          void this.plugin.saveSettings();
+        }));
+    new Setting(generalGroup)
+      .setName(t("Чёрная обводка статусов", "Black status outline"))
+      .setDesc(t("Показывать чёрную обводку вокруг цветных точек статусов.", "Show a black outline around colored status dots."))
+      .addToggle((toggle) => toggle
+        .setValue(this.plugin.settings.statusOutlineEnabled)
+        .onChange((value) => {
+          this.plugin.settings.statusOutlineEnabled = value;
+          void this.plugin.saveSettings().then(() => this.update());
         }));
     new Setting(generalGroup)
       .setName(t("Цвет цифр — светлая тема", "Number color — light theme"))
@@ -687,6 +713,18 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       t("Папки, форматы имён и шаблоны.", "Folders, filename formats and templates."),
       t("3 типа", "3 types")
     );
+    const notesGeneralGroup = notesSection.createDiv({
+      cls: "oxill-calendar-settings-group"
+    });
+    new Setting(notesGeneralGroup)
+      .setName(t("Подтверждать создание заметки", "Confirm note creation"))
+      .setDesc(t("Показывать запрос перед созданием отсутствующей периодической заметки.", "Ask before creating a missing periodic note."))
+      .addToggle((toggle) => toggle
+        .setValue(this.plugin.settings.confirmBeforeCreate)
+        .onChange((value) => {
+          this.plugin.settings.confirmBeforeCreate = value;
+          void this.plugin.saveSettings();
+        }));
     this.renderNoteSettings(notesSection, "daily", t("Дневная заметка", "Daily note"));
     this.renderNoteSettings(notesSection, "weekly", t("Недельная заметка", "Weekly note"));
     this.renderNoteSettings(notesSection, "monthly", t("Месячная заметка", "Monthly note"));
@@ -742,6 +780,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           }));
       const marker = row.nameEl.createSpan({ cls: "oxill-calendar-status-marker" });
       marker.style.backgroundColor = status.color;
+      marker.style.borderWidth = this.plugin.settings.statusOutlineEnabled ? "1px" : "0";
     });
     new Setting(statusesGroup)
       .setName(t("Новый статус", "New status"))
@@ -770,7 +809,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     if (archived.length > 0) {
       const archiveSection = this.createSection(
         "archive",
-        t("Архив", "Archive"),
+        t("Архив графиков", "Schedule archive"),
         t("Завершённые графики и их история.", "Completed schedules and their history."),
         String(archived.length)
       );
@@ -800,6 +839,13 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           }));
       });
     }
+
+    ["interface", "notes", "schedules", "statuses", "work-timer", "archive"].forEach((key) => {
+      const section = this.rootEl.querySelector<HTMLElement>(
+        `.oxill-calendar-settings-section[data-section-key="${key}"]`
+      );
+      if (section) this.rootEl.appendChild(section);
+    });
 
     this.renderAuthorCard();
   }
@@ -1048,6 +1094,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     const details = this.rootEl.createEl("details", {
       cls: "oxill-calendar-settings-section"
     });
+    details.dataset.sectionKey = key;
     details.open = this.openSections.has(key);
     const summary = details.createEl("summary", { cls: "oxill-calendar-settings-section-summary" });
     summary.title = description;

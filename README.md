@@ -20,9 +20,13 @@ The plugin works locally inside your Obsidian vault. It contains no telemetry an
 - ordered weekly periods with an individual start date;
 - hours for every weekday and a pastel color for every period;
 - multiple schedules displayed as colored sectors on the same calendar day;
+- schedule colors shown as outlines or full fills;
+- per-day period selection and schedule disabling from the context menu;
+- optional hiding of dates outside the displayed month;
 - schedule archiving that preserves calendar history;
 - unlimited custom statuses;
 - up to three colored status dots on each day;
+- optional black outlines around status dots;
 - status assignment from the date context menu;
 - bulk status assignment across a date range with a configurable interval;
 - removal of status assignments from a date range or the entire calendar;

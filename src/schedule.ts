@@ -18,6 +18,15 @@ function containsDate(schedule: CalendarSchedule, date: Moment): boolean {
   return archivedAt.isValid() && !date.isAfter(archivedAt, "day");
 }
 
+export function getSchedulesForDate(
+  settings: OxillCalendarSettings,
+  date: Moment
+): CalendarSchedule[] {
+  return settings.schedules
+    .filter((schedule) => schedule.periods.length > 0 && containsDate(schedule, date))
+    .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
+}
+
 function getOccurrence(
   schedule: CalendarSchedule,
   date: Moment,
@@ -28,7 +37,15 @@ function getOccurrence(
     settings.weekStartsOn
   );
   const elapsedWeeks = startOfWeek(date, settings.weekStartsOn).diff(cycleStart, "weeks");
-  const period = schedule.periods[elapsedWeeks % schedule.periods.length];
+  const dateOverrides = settings.dayScheduleOverrides[date.format("YYYY-MM-DD")];
+  const hasOverride = Boolean(dateOverrides)
+    && Object.prototype.hasOwnProperty.call(dateOverrides, schedule.id);
+  const overridePeriodId = hasOverride ? dateOverrides[schedule.id] : undefined;
+  if (overridePeriodId === null) return null;
+  const automaticPeriod = schedule.periods[elapsedWeeks % schedule.periods.length];
+  const period = typeof overridePeriodId === "string"
+    ? schedule.periods.find((item) => item.id === overridePeriodId) ?? automaticPeriod
+    : automaticPeriod;
   const weekday = date.isoWeekday();
 
   const hours = Math.max(0, Number(period.dayHours[String(weekday)]) || 0);
@@ -39,9 +56,7 @@ export function getDaySchedule(
   settings: OxillCalendarSettings,
   date: Moment
 ): DayScheduleInfo | null {
-  const occurrences = settings.schedules
-    .filter((schedule) => schedule.periods.length > 0 && containsDate(schedule, date))
-    .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id))
+  const occurrences = getSchedulesForDate(settings, date)
     .map((schedule) => getOccurrence(schedule, date, settings))
     .filter((item): item is ScheduleOccurrence => item !== null)
     .slice(0, 4);

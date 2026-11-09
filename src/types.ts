@@ -1,6 +1,7 @@
 export type NoteKind = "daily" | "weekly" | "monthly";
 export type WeekStart = "monday" | "sunday";
 export type InterfaceLanguage = "ru" | "en";
+export type ScheduleDisplayMode = "outline" | "fill";
 
 export interface PeriodicNoteSettings {
   folder: string;
@@ -44,6 +45,9 @@ export interface OxillCalendarSettings {
   calendarNumberColorLight: string;
   calendarNumberColorDark: string;
   weekStartsOn: WeekStart;
+  showOnlyCurrentMonth: boolean;
+  scheduleDisplayMode: ScheduleDisplayMode;
+  statusOutlineEnabled: boolean;
   dailyWeekdayTemplatesEnabled: boolean;
   dailyWeekdayTemplates: Record<string, string>;
   workTimerEnabled: boolean;
@@ -59,6 +63,7 @@ export interface OxillCalendarSettings {
   schedules: CalendarSchedule[];
   statuses: CalendarStatus[];
   dayStatuses: Record<string, string[]>;
+  dayScheduleOverrides: Record<string, Record<string, string | null>>;
 }
 
 export interface ScheduleOccurrence {
@@ -77,6 +82,9 @@ export const DEFAULT_SETTINGS: OxillCalendarSettings = {
   calendarNumberColorLight: "#000000",
   calendarNumberColorDark: "#FFFFFF",
   weekStartsOn: "monday",
+  showOnlyCurrentMonth: false,
+  scheduleDisplayMode: "outline",
+  statusOutlineEnabled: true,
   dailyWeekdayTemplatesEnabled: false,
   dailyWeekdayTemplates: {},
   workTimerEnabled: false,
@@ -103,7 +111,8 @@ export const DEFAULT_SETTINGS: OxillCalendarSettings = {
   },
   schedules: [],
   statuses: [],
-  dayStatuses: {}
+  dayStatuses: {},
+  dayScheduleOverrides: {}
 };
 
 const PASTEL_COLORS = [

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.0
+
+- Reorganized all settings into focused collapsible sections that are closed by default.
+- Added optional hiding of adjacent-month dates.
+- Added outline and full-fill display modes for schedule periods.
+- Added a toggle for black status-dot outlines.
+- Added per-day schedule period overrides from the calendar context menu.
+
 ## 1.7.1
 
 - Fixed duplicate calendar panes appearing after the plugin is updated or reloaded.
