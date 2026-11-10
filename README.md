@@ -12,9 +12,11 @@ The plugin works locally inside your Obsidian vault. It contains no telemetry an
 - daily, weekly and monthly periodic notes;
 - optional daily note templates for each weekday;
 - configurable Monday or Sunday week start;
-- separate folders, filename formats and templates for every note type;
+- fixed `YYYY-MM-DD` filenames for calendar notes;
+- optional connection to existing daily notes by filename or a date property;
+- separate folders and templates for every calendar-note type;
 - searchable folder and Markdown template path suggestions;
-- customizable folded-corner indicators for days with existing notes;
+- customizable corner, overline or underline indicators for days with existing notes;
 - separate calendar number colors for light and dark themes;
 - up to four independent recurring schedules;
 - ordered weekly periods with an individual start date;
@@ -22,6 +24,7 @@ The plugin works locally inside your Obsidian vault. It contains no telemetry an
 - multiple schedules displayed as colored sectors on the same calendar day;
 - schedule colors shown as outlines or full fills;
 - per-day period selection and schedule disabling from the context menu;
+- period changes and schedule disabling over a selected date range;
 - optional hiding of dates outside the displayed month;
 - schedule archiving that preserves calendar history;
 - unlimited custom statuses;

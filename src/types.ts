@@ -2,10 +2,10 @@ export type NoteKind = "daily" | "weekly" | "monthly";
 export type WeekStart = "monday" | "sunday";
 export type InterfaceLanguage = "ru" | "en";
 export type ScheduleDisplayMode = "outline" | "fill";
+export type NoteIndicatorStyle = "corner" | "line" | "underline";
 
 export interface PeriodicNoteSettings {
   folder: string;
-  format: string;
   template: string;
 }
 
@@ -57,6 +57,10 @@ export interface OxillCalendarSettings {
   pendingWorkPeriods: WorkPeriod[];
   noteIndicatorColor: string;
   noteIndicatorBorderWidth: number;
+  noteIndicatorStyle: NoteIndicatorStyle;
+  dailyNotesConnectorEnabled: boolean;
+  dailyNotesConnectorFolder: string;
+  dailyNotesConnectorProperty: string;
   daily: PeriodicNoteSettings;
   weekly: PeriodicNoteSettings;
   monthly: PeriodicNoteSettings;
@@ -94,19 +98,20 @@ export const DEFAULT_SETTINGS: OxillCalendarSettings = {
   pendingWorkPeriods: [],
   noteIndicatorColor: "#A8C7FA",
   noteIndicatorBorderWidth: 1,
+  noteIndicatorStyle: "corner",
+  dailyNotesConnectorEnabled: false,
+  dailyNotesConnectorFolder: "",
+  dailyNotesConnectorProperty: "date",
   daily: {
     folder: "Ежедневные заметки",
-    format: "YYYY-MM-DD",
     template: ""
   },
   weekly: {
     folder: "Недельные заметки",
-    format: "GGGG-[W]WW",
     template: ""
   },
   monthly: {
     folder: "Месячные заметки",
-    format: "YYYY-MM",
     template: ""
   },
   schedules: [],

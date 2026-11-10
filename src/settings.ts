@@ -537,6 +537,35 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     super(app, plugin);
   }
 
+  private createSegmentedControl(
+    parent: HTMLElement,
+    options: Array<{ value: string; label: string }>,
+    current: string,
+    onChange: (value: string) => void
+  ): HTMLElement {
+    const control = parent.createDiv({ cls: "oxill-calendar-segmented" });
+    const update = (value: string) => {
+      control.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
+        const active = button.dataset.value === value;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    };
+    options.forEach((option) => {
+      const button = control.createEl("button", {
+        text: option.label,
+        attr: { type: "button", "aria-pressed": "false" }
+      });
+      button.dataset.value = option.value;
+      button.addEventListener("click", () => {
+        update(option.value);
+        onChange(option.value);
+      });
+    });
+    update(current);
+    return control;
+  }
+
   getSettingDefinitions(): SettingDefinitionItem[] {
     return [{
       name: "Oxill Calendar",
@@ -559,9 +588,9 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
 
     const interfaceSection = this.createSection(
       "interface",
-      t("Интерфейс календаря", "Calendar interface"),
-      t("Вид календаря, цвета и поведение сетки.", "Calendar appearance, colors and grid behavior."),
-      t("9 параметров", "9 options")
+      t("Календарь", "Calendar"),
+      t("Язык, неделя и отображение сетки.", "Language, week and grid appearance."),
+      t("5 параметров", "5 options")
     );
     const generalGroup = interfaceSection.createDiv({
       cls: "oxill-calendar-settings-group"
@@ -581,17 +610,21 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
             this.update();
           });
         }));
-    new Setting(generalGroup)
+    const weekStartSetting = new Setting(generalGroup)
       .setName(t("Начало недели", "First day of week"))
-      .setDesc(t("Влияет на календарь, недельные заметки и смену периодов графика.", "Affects the calendar, weekly notes and schedule period rotation."))
-      .addDropdown((dropdown) => dropdown
-        .addOption("monday", t("Понедельник", "Monday"))
-        .addOption("sunday", t("Воскресенье", "Sunday"))
-        .setValue(this.plugin.settings.weekStartsOn)
-        .onChange((value) => {
-          this.plugin.settings.weekStartsOn = value === "sunday" ? "sunday" : "monday";
-          void this.plugin.saveSettings();
-        }));
+      .setDesc(t("Влияет на календарь, недельные заметки и смену периодов графика.", "Affects the calendar, weekly notes and schedule period rotation."));
+    this.createSegmentedControl(
+      weekStartSetting.controlEl,
+      [
+        { value: "monday", label: t("Пн", "Mon") },
+        { value: "sunday", label: t("Вс", "Sun") }
+      ],
+      this.plugin.settings.weekStartsOn,
+      (value) => {
+        this.plugin.settings.weekStartsOn = value === "sunday" ? "sunday" : "monday";
+        void this.plugin.saveSettings();
+      }
+    );
     new Setting(generalGroup)
       .setName(t("Только дни текущего месяца", "Current-month days only"))
       .setDesc(t("Скрывать даты соседних месяцев в сетке календаря.", "Hide dates from adjacent months in the calendar grid."))
@@ -600,26 +633,6 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         .onChange((value) => {
           this.plugin.settings.showOnlyCurrentMonth = value;
           void this.plugin.saveSettings();
-        }));
-    new Setting(generalGroup)
-      .setName(t("Отображение графиков", "Schedule appearance"))
-      .setDesc(t("Показывать цвет периода обводкой или полной заливкой дня.", "Show period colors as an outline or a full day fill."))
-      .addDropdown((dropdown) => dropdown
-        .addOption("outline", t("Цветная обводка", "Colored outline"))
-        .addOption("fill", t("Полная заливка", "Full fill"))
-        .setValue(this.plugin.settings.scheduleDisplayMode)
-        .onChange((value) => {
-          this.plugin.settings.scheduleDisplayMode = value === "fill" ? "fill" : "outline";
-          void this.plugin.saveSettings();
-        }));
-    new Setting(generalGroup)
-      .setName(t("Чёрная обводка статусов", "Black status outline"))
-      .setDesc(t("Показывать чёрную обводку вокруг цветных точек статусов.", "Show a black outline around colored status dots."))
-      .addToggle((toggle) => toggle
-        .setValue(this.plugin.settings.statusOutlineEnabled)
-        .onChange((value) => {
-          this.plugin.settings.statusOutlineEnabled = value;
-          void this.plugin.saveSettings().then(() => this.update());
         }));
     new Setting(generalGroup)
       .setName(t("Цвет цифр — светлая тема", "Number color — light theme"))
@@ -639,25 +652,6 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           this.plugin.settings.calendarNumberColorDark = value;
           void this.plugin.saveSettings();
         }));
-    new Setting(generalGroup)
-      .setName(t("Цвет индикатора созданной заметки", "Created-note indicator color"))
-      .setDesc(t("Цвет загнутого уголка у дня с существующей заметкой.", "Color of the folded corner on days with an existing note."))
-      .addColorPicker((picker) => picker
-        .setValue(this.plugin.settings.noteIndicatorColor)
-        .onChange((value) => {
-          this.plugin.settings.noteIndicatorColor = value;
-          void this.plugin.saveSettings();
-        }));
-    new Setting(generalGroup)
-      .setName(t("Обводка индикатора", "Indicator outline"))
-      .setDesc(t("Толщина внутренней чёрной обводки от 0,5 до 1,5 px.", "Inner black outline width from 0.5 to 1.5 px."))
-      .addSlider((slider) => slider
-        .setLimits(0.5, 1.5, 0.1)
-        .setValue(this.plugin.settings.noteIndicatorBorderWidth)
-        .onChange((value) => {
-          this.plugin.settings.noteIndicatorBorderWidth = value;
-          void this.plugin.saveSettings();
-        }));
 
     const workTimerSection = this.createSection(
       "work-timer",
@@ -668,14 +662,20 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     const workTimerGroup = workTimerSection.createDiv({
       cls: "oxill-calendar-settings-group"
     });
+    let timerDetails: HTMLElement;
     new Setting(workTimerGroup)
       .setName(t("Включить таймер", "Enable timer"))
       .setDesc(t("Показывать кнопку «Старт» и управление рабочим периодом.", "Show the Start button and work-period controls."))
       .addToggle((toggle) => toggle
         .setValue(this.plugin.settings.workTimerEnabled)
-        .onChange((value) => void this.plugin.workTimer.setEnabled(value)));
+        .onChange((value) => {
+          timerDetails.hidden = !value;
+          void this.plugin.workTimer.setEnabled(value);
+        }));
+    timerDetails = workTimerGroup.createDiv({ cls: "oxill-calendar-conditional-settings" });
+    timerDetails.hidden = !this.plugin.settings.workTimerEnabled;
     let reportTemplateInput: HTMLInputElement | null = null;
-    new Setting(workTimerGroup)
+    new Setting(timerDetails)
       .setName(t("Шаблон отчёта", "Report template"))
       .setDesc(t("Markdown-файл, из которого формируется запись рабочего периода.", "Markdown file used to create a work-period entry."))
       .addText((text) => {
@@ -704,7 +704,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         .setIcon("info")
         .setTooltip(t("Конструкции шаблона", "Template variables"))
         .onClick(() => new WorkReportTemplateHelpModal(this.app).open()));
-    new Setting(workTimerGroup)
+    new Setting(timerDetails)
       .setName(t("Незаполненные периоды", "Unfinished reports"))
       .setDesc(t(`Ожидают отчёта: ${this.plugin.settings.pendingWorkPeriods.length}`, `Awaiting report: ${this.plugin.settings.pendingWorkPeriods.length}`))
       .addButton((button) => button
@@ -713,8 +713,8 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
 
     const notesSection = this.createSection(
       "notes",
-      t("Периодические заметки", "Periodic notes"),
-      t("Папки, форматы имён и шаблоны.", "Folders, filename formats and templates."),
+      t("Заметки календаря", "Calendar notes"),
+      t("Создание, индикаторы, папки и шаблоны.", "Creation, indicators, folders and templates."),
       t("3 типа", "3 types")
     );
     const notesGeneralGroup = notesSection.createDiv({
@@ -729,9 +729,11 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
           this.plugin.settings.confirmBeforeCreate = value;
           void this.plugin.saveSettings();
         }));
+    this.renderIndicatorSettings(notesGeneralGroup);
     this.renderNoteSettings(notesSection, "daily", t("Дневная заметка", "Daily note"));
     this.renderNoteSettings(notesSection, "weekly", t("Недельная заметка", "Weekly note"));
     this.renderNoteSettings(notesSection, "monthly", t("Месячная заметка", "Monthly note"));
+    this.renderConnectorSection();
 
     const statusesSection = this.createSection(
       "statuses",
@@ -742,6 +744,22 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     const statusesGroup = statusesSection.createDiv({
       cls: "oxill-calendar-settings-group oxill-calendar-statuses-group"
     });
+    const statusAppearance = new Setting(statusesGroup)
+      .setName(t("Вид точек", "Dot appearance"))
+      .setDesc(t("Чёрная обводка помогает различать пастельные цвета.", "A black outline improves pastel-color contrast."));
+    statusAppearance.controlEl.addClass("oxill-calendar-visual-control");
+    const statusPreview = statusAppearance.controlEl.createDiv({ cls: "oxill-calendar-status-preview" });
+    ["#A8C7FA", "#F4B8C4", "#A9DCC9"].forEach((color) => {
+      statusPreview.createSpan().setCssProps({ "--oxill-preview-color": color });
+    });
+    statusPreview.classList.toggle("has-outline", this.plugin.settings.statusOutlineEnabled);
+    statusAppearance.addToggle((toggle) => toggle
+      .setValue(this.plugin.settings.statusOutlineEnabled)
+      .onChange((value) => {
+        this.plugin.settings.statusOutlineEnabled = value;
+        statusPreview.classList.toggle("has-outline", value);
+        void this.plugin.saveSettings();
+      }));
     if (this.plugin.settings.statuses.length === 0) {
       statusesGroup.createDiv({
         cls: "oxill-calendar-empty-state",
@@ -809,42 +827,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
 
     this.renderScheduleSection();
 
-    const archived = this.plugin.settings.schedules.filter((item) => item.archivedAt);
-    if (archived.length > 0) {
-      const archiveSection = this.createSection(
-        "archive",
-        t("Архив графиков", "Schedule archive"),
-        t("Завершённые графики и их история.", "Completed schedules and their history."),
-        String(archived.length)
-      );
-      const archiveGroup = archiveSection.createDiv({
-        cls: "oxill-calendar-settings-group oxill-calendar-archive-group"
-      });
-      archived.forEach((schedule) => {
-        new Setting(archiveGroup)
-          .setName(schedule.name)
-          .setDesc(`${schedule.startDate} — ${schedule.archivedAt}`)
-          .addButton((button) => button.setButtonText(t("Изменить", "Edit")).onClick(() => {
-            new ScheduleEditorModal(this.plugin, schedule, false).open();
-          }))
-          .addButton((button) => button.setButtonText(t("Восстановить", "Restore")).onClick(() => {
-            if (this.plugin.settings.schedules.filter((item) => !item.archivedAt).length >= 4) {
-              new Notice(t("Можно использовать не более четырёх активных графиков", "You can use no more than four active schedules"));
-              return;
-            }
-            schedule.archivedAt = null;
-            void this.saveAndRefresh();
-          }))
-          .addButton((button) => button.setDestructive().setButtonText(t("Удалить", "Delete")).onClick(() => {
-            this.plugin.settings.schedules = this.plugin.settings.schedules.filter(
-              (item) => item.id !== schedule.id
-            );
-            void this.saveAndRefresh();
-          }));
-      });
-    }
-
-    ["interface", "notes", "schedules", "statuses", "work-timer", "archive"].forEach((key) => {
+    ["interface", "notes", "connectors", "schedules", "statuses", "work-timer"].forEach((key) => {
       const section = this.rootEl.querySelector<HTMLElement>(
         `.oxill-calendar-settings-section[data-section-key="${key}"]`
       );
@@ -904,6 +887,67 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     }
   }
 
+  private renderConnectorSection(): void {
+    const section = this.createSection(
+      "connectors",
+      t("Коннекторы", "Connectors"),
+      t("Связь календаря с внешними системами заметок.", "Connections to external note systems."),
+      this.plugin.settings.dailyNotesConnectorEnabled ? t("1 включён", "1 enabled") : t("Выключено", "Disabled")
+    );
+    const group = section.createDiv({
+      cls: "oxill-calendar-settings-group oxill-calendar-connectors-group"
+    });
+    let connectorSettings: HTMLElement;
+    new Setting(group)
+      .setName(t("Ежедневные заметки", "Daily notes"))
+      .setDesc(t(
+        "Показывать существующие ежедневные заметки в календаре.",
+        "Show existing daily notes in the calendar."
+      ))
+      .addToggle((toggle) => toggle
+        .setValue(this.plugin.settings.dailyNotesConnectorEnabled)
+        .onChange((value) => {
+          this.plugin.settings.dailyNotesConnectorEnabled = value;
+          connectorSettings.hidden = !value;
+          void this.plugin.saveSettings();
+        }));
+    connectorSettings = group.createDiv({ cls: "oxill-calendar-connector-settings" });
+    connectorSettings.hidden = !this.plugin.settings.dailyNotesConnectorEnabled;
+    connectorSettings.createDiv({
+      cls: "oxill-calendar-connector-warning",
+      text: t(
+        "Дата должна быть указана в имени файла YYYY-MM-DD или в свойстве заметки.",
+        "The date must be present in the YYYY-MM-DD filename or in a note property."
+      )
+    });
+    new Setting(connectorSettings)
+      .setName(t("Папка ежедневных заметок", "Daily notes folder"))
+      .setDesc(t("Поиск выполняется в этой папке и её подпапках.", "This folder and its subfolders are scanned."))
+      .addText((text) => {
+        text
+          .setPlaceholder(t("Выберите папку…", "Choose a folder…"))
+          .setValue(this.plugin.settings.dailyNotesConnectorFolder)
+          .onChange((value) => {
+            this.plugin.settings.dailyNotesConnectorFolder = value.trim();
+            void this.plugin.saveSettings();
+          });
+        new FolderSuggest(this.app, text.inputEl, (path) => {
+          this.plugin.settings.dailyNotesConnectorFolder = path;
+          void this.plugin.saveSettings();
+        });
+      });
+    new Setting(connectorSettings)
+      .setName(t("Свойство даты", "Date property"))
+      .setDesc(t("Например: date. Значение должно иметь вид YYYY-MM-DD.", "For example: date. The value must use YYYY-MM-DD."))
+      .addText((text) => text
+        .setPlaceholder("date")
+        .setValue(this.plugin.settings.dailyNotesConnectorProperty)
+        .onChange((value) => {
+          this.plugin.settings.dailyNotesConnectorProperty = value.trim() || "date";
+          void this.plugin.saveSettings();
+        }));
+  }
+
   private renderScheduleSection(): void {
     const active = this.plugin.settings.schedules.filter((item) => !item.archivedAt);
     const section = this.createSection(
@@ -915,6 +959,36 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     const group = section.createDiv({
       cls: "oxill-calendar-settings-group oxill-calendar-schedules-group"
     });
+
+    const scheduleAppearance = new Setting(group)
+      .setName(t("Отображение", "Appearance"))
+      .setDesc(t("Цвет периода обводкой или заливкой дня.", "Show period color as a day outline or fill."));
+    scheduleAppearance.controlEl.addClass("oxill-calendar-visual-control");
+    const schedulePreview = scheduleAppearance.controlEl.createDiv({ cls: "oxill-calendar-day-preview is-schedule" });
+    schedulePreview.createSpan({ text: "14" });
+    const previewColors = active[0]?.periods.slice(0, 2).map((period) => period.color)
+      ?? ["#A8C7FA", "#F4B8C4"];
+    const updateSchedulePreview = () => {
+      schedulePreview.dataset.mode = this.plugin.settings.scheduleDisplayMode;
+      schedulePreview.setCssProps({
+        "--oxill-preview-color": previewColors[0] ?? "#A8C7FA",
+        "--oxill-preview-color-secondary": previewColors[1] ?? previewColors[0] ?? "#A8C7FA"
+      });
+    };
+    this.createSegmentedControl(
+      scheduleAppearance.controlEl,
+      [
+        { value: "outline", label: t("Обводка", "Outline") },
+        { value: "fill", label: t("Заливка", "Fill") }
+      ],
+      this.plugin.settings.scheduleDisplayMode,
+      (value) => {
+        this.plugin.settings.scheduleDisplayMode = value === "fill" ? "fill" : "outline";
+        updateSchedulePreview();
+        void this.plugin.saveSettings();
+      }
+    );
+    updateSchedulePreview();
 
     if (active.length === 0) {
       group.createDiv({ cls: "oxill-calendar-empty-state", text: t("Активного графика пока нет.", "There are no active schedules yet.") });
@@ -957,6 +1031,37 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
             true
           ).open();
         }));
+
+    const archived = this.plugin.settings.schedules.filter((item) => item.archivedAt);
+    if (archived.length > 0) {
+      const archive = group.createEl("details", { cls: "oxill-calendar-inline-archive" });
+      const summary = archive.createEl("summary");
+      summary.createSpan({ text: t("Архив графиков", "Schedule archive") });
+      summary.createSpan({ cls: "oxill-calendar-inline-count", text: String(archived.length) });
+      const archiveBody = archive.createDiv({ cls: "oxill-calendar-inline-archive-body" });
+      archived.forEach((schedule) => {
+        new Setting(archiveBody)
+          .setName(schedule.name)
+          .setDesc(`${schedule.startDate} — ${schedule.archivedAt}`)
+          .addButton((button) => button.setButtonText(t("Изменить", "Edit")).onClick(() => {
+            new ScheduleEditorModal(this.plugin, schedule, false).open();
+          }))
+          .addButton((button) => button.setButtonText(t("Восстановить", "Restore")).onClick(() => {
+            if (this.plugin.settings.schedules.filter((item) => !item.archivedAt).length >= 4) {
+              new Notice(t("Можно использовать не более четырёх активных графиков", "You can use no more than four active schedules"));
+              return;
+            }
+            schedule.archivedAt = null;
+            void this.saveAndRefresh();
+          }))
+          .addButton((button) => button.setDestructive().setButtonText(t("Удалить", "Delete")).onClick(() => {
+            this.plugin.settings.schedules = this.plugin.settings.schedules.filter(
+              (item) => item.id !== schedule.id
+            );
+            void this.saveAndRefresh();
+          }));
+      });
+    }
   }
 
   private renderAuthorCard(): void {
@@ -1038,12 +1143,12 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         void this.plugin.saveSettings();
       });
     });
-    new Setting(body).setName(t("Формат имени", "Filename format")).setDesc(t("Формат Moment.js для имени файла.", "Moment.js format used for the filename.")).addText((text) =>
-      text.setValue(config.format).onChange((value) => {
-        config.format = value || config.format;
-        void this.plugin.saveSettings();
-      })
-    );
+    new Setting(body)
+      .setName(t("Имя файла", "Filename"))
+      .setDesc(t(
+        "Фиксированный формат YYYY-MM-DD предотвращает совпадение дат разных лет.",
+        "The fixed YYYY-MM-DD format prevents dates from different years from colliding."
+      ));
     new Setting(body).setName(kind === "daily" ? t("Шаблон по умолчанию", "Default template") : t("Шаблон", "Template")).setDesc(t("Путь к Markdown-файлу. Оставьте поле пустым, чтобы не применять шаблон.", "Path to a Markdown file. Leave empty to use no template.")).addText((text) => {
       text.setPlaceholder(t("Начните вводить имя файла…", "Start typing a filename…")).setValue(config.template).onChange((value) => {
         config.template = value.trim();
@@ -1087,6 +1192,64 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         });
       });
     }
+  }
+
+  private renderIndicatorSettings(parent: HTMLElement): void {
+    let indicatorBorderSetting: Setting;
+    const styleSetting = new Setting(parent)
+      .setName(t("Индикатор заметки", "Note indicator"))
+      .setDesc(t("Как отмечать дни с существующей заметкой.", "How days with an existing note are marked."));
+    styleSetting.controlEl.addClass("oxill-calendar-visual-control");
+    const preview = styleSetting.controlEl.createDiv({ cls: "oxill-calendar-day-preview" });
+    preview.createSpan({ text: "14" });
+    const updatePreview = () => {
+      preview.dataset.indicator = this.plugin.settings.noteIndicatorStyle;
+      preview.setCssProps({
+        "--oxill-preview-color": this.plugin.settings.noteIndicatorColor,
+        "--oxill-preview-border-width": `${this.plugin.settings.noteIndicatorBorderWidth}px`
+      });
+    };
+    this.createSegmentedControl(
+      styleSetting.controlEl,
+      [
+        { value: "corner", label: t("Уголок", "Corner") },
+        { value: "line", label: t("Сверху", "Above") },
+        { value: "underline", label: t("Снизу", "Below") }
+      ],
+      this.plugin.settings.noteIndicatorStyle,
+      (value) => {
+        this.plugin.settings.noteIndicatorStyle = value === "line" || value === "underline"
+          ? value
+          : "corner";
+        indicatorBorderSetting.settingEl.hidden = this.plugin.settings.noteIndicatorStyle !== "corner";
+        updatePreview();
+        void this.plugin.saveSettings();
+      }
+    );
+    const colorSetting = new Setting(parent)
+      .setName(t("Цвет индикатора", "Indicator color"))
+      .setDesc(t("Используется уголком и линиями.", "Used by the corner and line indicators."))
+      .addColorPicker((picker) => picker
+        .setValue(this.plugin.settings.noteIndicatorColor)
+        .onChange((value) => {
+          this.plugin.settings.noteIndicatorColor = value;
+          updatePreview();
+          void this.plugin.saveSettings();
+        }));
+    colorSetting.settingEl.addClass("oxill-calendar-compact-setting");
+    indicatorBorderSetting = new Setting(parent)
+      .setName(t("Обводка уголка", "Corner outline"))
+      .setDesc(t("Толщина внутренней чёрной обводки.", "Width of the inner black outline."))
+      .addSlider((slider) => slider
+        .setLimits(0.5, 1.5, 0.1)
+        .setValue(this.plugin.settings.noteIndicatorBorderWidth)
+        .onChange((value) => {
+          this.plugin.settings.noteIndicatorBorderWidth = value;
+          updatePreview();
+          void this.plugin.saveSettings();
+        }));
+    indicatorBorderSetting.settingEl.hidden = this.plugin.settings.noteIndicatorStyle !== "corner";
+    updatePreview();
   }
 
   private createSection(

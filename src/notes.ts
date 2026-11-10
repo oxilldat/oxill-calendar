@@ -55,8 +55,50 @@ export function getNotePath(
   const titleDate = kind === "weekly" && settings.weekStartsOn === "sunday"
     ? normalizedDate.clone().add(1, "day")
     : normalizedDate;
-  const title = titleDate.format(config.format);
+  const title = titleDate.format("YYYY-MM-DD");
   return normalizePath(config.folder ? `${config.folder}/${title}.md` : `${title}.md`);
+}
+
+function connectorDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^\d{4}-\d{2}-\d{2}$/);
+  if (!match) return null;
+  const parsed = moment(match[0], "YYYY-MM-DD", true);
+  return parsed.isValid() ? match[0] : null;
+}
+
+export function getConnectedDailyNotes(
+  app: App,
+  settings: OxillCalendarSettings
+): Map<string, TFile[]> {
+  const result = new Map<string, TFile[]>();
+  if (!settings.dailyNotesConnectorEnabled) return result;
+
+  const folder = normalizePath(settings.dailyNotesConnectorFolder);
+  if (!folder) return result;
+  const folderPrefix = `${folder}/`;
+  const property = settings.dailyNotesConnectorProperty.trim() || "date";
+
+  app.vault.getMarkdownFiles().forEach((file) => {
+    if (!file.path.startsWith(folderPrefix)) return;
+    const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
+    const date = connectorDate(frontmatter?.[property]) ?? connectorDate(file.basename);
+    if (!date) return;
+    const files = result.get(date) ?? [];
+    files.push(file);
+    result.set(date, files);
+  });
+
+  result.forEach((files) => files.sort((a, b) => a.path.localeCompare(b.path)));
+  return result;
+}
+
+function connectedDailyNoteForDate(
+  app: App,
+  settings: OxillCalendarSettings,
+  date: Moment
+): TFile | null {
+  return getConnectedDailyNotes(app, settings).get(date.format("YYYY-MM-DD"))?.[0] ?? null;
 }
 
 async function ensureFolder(app: App, folderPath: string): Promise<void> {
@@ -107,7 +149,7 @@ async function createNote(
   const titleDate = kind === "weekly" && settings.weekStartsOn === "sunday"
     ? normalizedDate.clone().add(1, "day")
     : normalizedDate;
-  const title = titleDate.format(config.format);
+  const title = titleDate.format("YYYY-MM-DD");
   const path = getNotePath(settings, kind, date);
   const parent = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
   await ensureFolder(app, parent);
@@ -141,6 +183,10 @@ export async function getOrCreatePeriodicNote(
   const path = getNotePath(settings, kind, date);
   const existing = app.vault.getAbstractFileByPath(path);
   if (existing instanceof TFile) return existing;
+  if (kind === "daily") {
+    const connected = connectedDailyNoteForDate(app, settings, date);
+    if (connected) return connected;
+  }
   if (existing) throw new Error(t(`Путь «${path}» уже занят папкой`, `Path “${path}” is already occupied by a folder`));
   return createNote(app, settings, kind, date);
 }
@@ -200,6 +246,13 @@ export async function openPeriodicNote(
   if (existing instanceof TFile) {
     await openFile(existing);
     return;
+  }
+  if (kind === "daily") {
+    const connected = connectedDailyNoteForDate(app, settings, date);
+    if (connected) {
+      await openFile(connected);
+      return;
+    }
   }
 
   const createAndOpen = async () => openFile(await createNote(app, settings, kind, date));

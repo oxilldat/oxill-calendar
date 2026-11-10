@@ -27,6 +27,31 @@ export function getSchedulesForDate(
     .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 }
 
+export function applyScheduleOverrideRange(
+  settings: OxillCalendarSettings,
+  schedule: CalendarSchedule,
+  start: Moment,
+  end: Moment,
+  periodId: string | null | undefined
+): number {
+  let changed = 0;
+  for (const date = start.clone(); !date.isAfter(end, "day"); date.add(1, "day")) {
+    if (!containsDate(schedule, date)) continue;
+    const dateKey = date.format("YYYY-MM-DD");
+    const overrides = { ...(settings.dayScheduleOverrides[dateKey] ?? {}) };
+    if (periodId === undefined) delete overrides[schedule.id];
+    else overrides[schedule.id] = periodId;
+
+    if (Object.keys(overrides).length > 0) {
+      settings.dayScheduleOverrides[dateKey] = overrides;
+    } else {
+      delete settings.dayScheduleOverrides[dateKey];
+    }
+    changed += 1;
+  }
+  return changed;
+}
+
 function getOccurrence(
   schedule: CalendarSchedule,
   date: Moment,

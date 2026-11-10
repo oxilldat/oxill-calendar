@@ -2,6 +2,7 @@ import type { Moment } from "moment";
 import {
   ItemView,
   Menu,
+  Modal,
   Notice,
   TFile,
   WorkspaceLeaf,
@@ -11,8 +12,13 @@ import {
 import type OxillCalendarPlugin from "./main";
 import { moment } from "./moment";
 import { getInterfaceLocale, t } from "./i18n";
-import { getNotePath, openPeriodicNote } from "./notes";
-import { dayScheduleTooltip, getDaySchedule, getSchedulesForDate } from "./schedule";
+import { getConnectedDailyNotes, getNotePath, openPeriodicNote } from "./notes";
+import {
+  applyScheduleOverrideRange,
+  dayScheduleTooltip,
+  getDaySchedule,
+  getSchedulesForDate
+} from "./schedule";
 import type { CalendarSchedule, NoteKind } from "./types";
 import { startOfWeek, weekNumber } from "./week";
 
@@ -32,6 +38,128 @@ function shortMonth(date: Moment): string {
 function parentPath(path: string): string {
   const index = path.lastIndexOf("/");
   return index < 0 ? "" : path.substring(0, index);
+}
+
+class ScheduleRangeModal extends Modal {
+  private startDate: string;
+  private endDate: string;
+  private periodId: string | null | undefined;
+
+  constructor(
+    private readonly plugin: OxillCalendarPlugin,
+    private readonly schedule: CalendarSchedule,
+    dateKey: string,
+    private readonly mode: "change" | "disable"
+  ) {
+    super(plugin.app);
+    this.startDate = dateKey;
+    this.endDate = dateKey;
+    this.periodId = mode === "disable" ? null : schedule.periods[0]?.id;
+  }
+
+  onOpen(): void {
+    this.modalEl.addClass("oxill-calendar-range-modal");
+    this.titleEl.setText(this.mode === "disable"
+      ? t("Отключить график на диапазон", "Disable schedule over a range")
+      : t("Изменить график на диапазоне", "Change schedule over a range"));
+    const summary = this.contentEl.createDiv({ cls: "oxill-calendar-range-summary" });
+    summary.createDiv({
+      cls: "oxill-calendar-range-schedule",
+      text: this.schedule.name
+    });
+    summary.createDiv({
+      cls: "oxill-calendar-range-description",
+      text: this.mode === "disable"
+        ? t(
+          "График не будет отображаться в выбранные даты.",
+          "The schedule will not appear on the selected dates."
+        )
+        : t(
+          "Выходные выбранного периода останутся выходными.",
+          "Days off in the selected period will remain days off."
+        )
+    });
+
+    const form = this.contentEl.createDiv({ cls: "oxill-calendar-range-form" });
+    if (this.mode === "change") {
+      const periodField = form.createDiv({ cls: "oxill-calendar-range-field is-period" });
+      periodField.createEl("label", { text: t("Период", "Period") });
+      const select = periodField.createEl("select", { cls: "dropdown" });
+      select.createEl("option", {
+        text: t("По исходному графику", "Original schedule"),
+        attr: { value: "automatic" }
+      });
+      this.schedule.periods.forEach((period) => {
+        select.createEl("option", {
+          text: period.name,
+          attr: { value: period.id }
+        });
+      });
+      select.value = typeof this.periodId === "string" ? this.periodId : "automatic";
+      select.addEventListener("change", () => {
+        this.periodId = select.value === "automatic" ? undefined : select.value;
+      });
+    }
+
+    const dates = form.createDiv({ cls: "oxill-calendar-range-dates" });
+    this.addDateField(dates, t("С даты", "From"), this.startDate, (value) => {
+      this.startDate = value;
+    });
+    this.addDateField(dates, t("По дату", "To"), this.endDate, (value) => {
+      this.endDate = value;
+    });
+
+    const footer = this.modalEl.createDiv({ cls: "oxill-calendar-modal-buttons oxill-calendar-range-actions" });
+    footer.createEl("button", { text: t("Отмена", "Cancel") })
+      .addEventListener("click", () => this.close());
+    const applyButton = footer.createEl("button", {
+      cls: this.mode === "disable" ? "mod-warning" : "mod-cta",
+      text: this.mode === "disable" ? t("Отключить", "Disable") : t("Применить", "Apply")
+    });
+    applyButton.addEventListener("click", () => void this.apply());
+  }
+
+  private addDateField(
+    parent: HTMLElement,
+    name: string,
+    value: string,
+    onChange: (value: string) => void
+  ): void {
+    const field = parent.createDiv({ cls: "oxill-calendar-range-field" });
+    field.createEl("label", { text: name });
+    const input = field.createEl("input", { type: "date", value });
+    input.addEventListener("change", () => onChange(input.value));
+  }
+
+  private async apply(): Promise<void> {
+    const start = moment(this.startDate, "YYYY-MM-DD", true).startOf("day");
+    const end = moment(this.endDate, "YYYY-MM-DD", true).startOf("day");
+    if (!start.isValid() || !end.isValid() || end.isBefore(start, "day")) {
+      new Notice(t("Укажите корректный диапазон дат", "Enter a valid date range"));
+      return;
+    }
+    if (end.diff(start, "days") >= 10_000) {
+      new Notice(t("Диапазон слишком большой: максимум 10 000 дней", "The range is too large: 10,000 days maximum"));
+      return;
+    }
+
+    const changed = applyScheduleOverrideRange(
+      this.plugin.settings,
+      this.schedule,
+      start,
+      end,
+      this.periodId
+    );
+    await this.plugin.saveSettings();
+    this.close();
+    new Notice(changed > 0
+      ? t(`Изменено дней: ${changed}`, `Days changed: ${changed}`)
+      : t("В выбранном диапазоне график не действует", "The schedule is not active in the selected range"));
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
 }
 
 export class CalendarView extends ItemView {
@@ -70,11 +198,18 @@ export class CalendarView extends ItemView {
     const file = this.app.workspace.getActiveFile();
     if (!file) return;
 
+    for (const [date, files] of getConnectedDailyNotes(this.app, this.plugin.settings)) {
+      if (!files.some((item) => item.path === file.path)) continue;
+      this.displayedMonth = moment(date, "YYYY-MM-DD", true).startOf("month");
+      this.render();
+      return;
+    }
+
     const candidates: NoteKind[] = ["daily", "weekly", "monthly"];
     for (const kind of candidates) {
       const config = this.plugin.settings[kind];
       if (normalizePath(config.folder) !== normalizePath(parentPath(file.path))) continue;
-      const parsed = moment(file.basename, config.format, true);
+      const parsed = moment(file.basename, "YYYY-MM-DD", true);
       if (!parsed.isValid()) continue;
       this.displayedMonth = parsed.startOf("month");
       this.render();
@@ -174,17 +309,34 @@ export class CalendarView extends ItemView {
 
     menu.addSeparator();
     const path = getNotePath(this.plugin.settings, "daily", date);
-    const file = this.app.vault.getAbstractFileByPath(path);
-    menu.addItem((item) => item
-      .setTitle(file instanceof TFile ? t("Открыть заметку", "Open note") : t("Создать заметку", "Create note"))
-      .setIcon("file-text")
-      .onClick(() => void openPeriodicNote(this.app, this.plugin.settings, "daily", date, false)));
-    if (file instanceof TFile) {
+    const ownFile = this.app.vault.getAbstractFileByPath(path);
+    const connectedFiles = getConnectedDailyNotes(this.app, this.plugin.settings).get(dateKey) ?? [];
+    if (ownFile instanceof TFile) {
       menu.addItem((item) => item
-        .setTitle(t("Удалить заметку", "Delete note"))
+        .setTitle(t("Открыть заметку календаря", "Open calendar note"))
+        .setIcon("file-text")
+        .onClick(() => void openPeriodicNote(this.app, this.plugin.settings, "daily", date, false)));
+      menu.addItem((item) => item
+        .setTitle(t("Удалить заметку календаря", "Delete calendar note"))
         .setIcon("trash-2")
-        .onClick(() => void this.app.fileManager.trashFile(file)));
+        .onClick(() => void this.app.fileManager.trashFile(ownFile)));
+    } else if (connectedFiles.length === 0) {
+      menu.addItem((item) => item
+        .setTitle(t("Создать заметку календаря", "Create calendar note"))
+        .setIcon("file-plus-2")
+        .onClick(() => void openPeriodicNote(this.app, this.plugin.settings, "daily", date, false)));
     }
+    connectedFiles
+      .filter((file) => !(ownFile instanceof TFile) || file.path !== ownFile.path)
+      .forEach((file) => {
+        menu.addItem((item) => item
+          .setTitle(t(`Открыть: ${file.basename}`, `Open: ${file.basename}`))
+          .setIcon("notebook-tabs")
+          .onClick(() => {
+            const leaf = this.app.workspace.getLeaf(false);
+            void leaf.openFile(file, { active: true });
+          }));
+      });
     menu.showAtMouseEvent(event);
   }
 
@@ -201,7 +353,7 @@ export class CalendarView extends ItemView {
     const selectedPeriodId = hasOverride ? overrides[schedule.id] : undefined;
 
     menu.addItem((item) => item
-      .setTitle(t("Автоматически", "Automatic"))
+      .setTitle(t("По исходному графику", "Original schedule"))
       .setIcon("rotate-ccw")
       .setChecked(!hasOverride)
       .onClick(() => this.setScheduleOverride(dateKey, schedule.id, undefined)));
@@ -218,6 +370,15 @@ export class CalendarView extends ItemView {
         .setChecked(selectedPeriodId === period.id)
         .onClick(() => this.setScheduleOverride(dateKey, schedule.id, period.id)));
     });
+    menu.addSeparator();
+    menu.addItem((item) => item
+      .setTitle(t("Изменить диапазон…", "Change range…"))
+      .setIcon("calendar-range")
+      .onClick(() => new ScheduleRangeModal(this.plugin, schedule, dateKey, "change").open()));
+    menu.addItem((item) => item
+      .setTitle(t("Отключить диапазон…", "Disable range…"))
+      .setIcon("calendar-off")
+      .onClick(() => new ScheduleRangeModal(this.plugin, schedule, dateKey, "disable").open()));
   }
 
   private setScheduleOverride(
@@ -317,6 +478,7 @@ export class CalendarView extends ItemView {
     );
     const activePath = this.app.workspace.getActiveFile()?.path;
     const today = moment();
+    const connectedDailyNotes = getConnectedDailyNotes(this.app, this.plugin.settings);
 
     for (let week = 0; week < 6; week += 1) {
       const row = body.createEl("tr");
@@ -356,18 +518,27 @@ export class CalendarView extends ItemView {
 
         const notePath = getNotePath(this.plugin.settings, "daily", date);
         const noteFile = this.app.vault.getAbstractFileByPath(notePath);
-        if (noteFile instanceof TFile) {
+        const connectedFiles = connectedDailyNotes.get(date.format("YYYY-MM-DD")) ?? [];
+        if (noteFile instanceof TFile || connectedFiles.length > 0) {
           button.addClass("has-note");
-          const indicator = button.createSpan({ cls: "oxill-calendar-note-indicator" });
-          const svg = createSvg("svg", {
-            attr: { viewBox: "0 0 14 14", "aria-hidden": "true" }
-          });
-          svg.appendChild(createSvg("polygon", {
-            attr: { points: "1 1 13 1 13 13" }
-          }));
-          indicator.appendChild(svg);
+          if (this.plugin.settings.noteIndicatorStyle === "line") {
+            button.createSpan({ cls: "oxill-calendar-note-indicator-line" });
+          } else if (this.plugin.settings.noteIndicatorStyle === "underline") {
+            button.createSpan({ cls: "oxill-calendar-note-indicator-underline" });
+          } else {
+            const indicator = button.createSpan({ cls: "oxill-calendar-note-indicator" });
+            const svg = createSvg("svg", {
+              attr: { viewBox: "0 0 14 14", "aria-hidden": "true" }
+            });
+            svg.appendChild(createSvg("polygon", {
+              attr: { points: "1 1 13 1 13 13" }
+            }));
+            indicator.appendChild(svg);
+          }
         }
-        if (notePath === activePath) button.addClass("is-active");
+        if (notePath === activePath || connectedFiles.some((file) => file.path === activePath)) {
+          button.addClass("is-active");
+        }
 
         const schedule = getDaySchedule(this.plugin.settings, date);
         if (schedule) {

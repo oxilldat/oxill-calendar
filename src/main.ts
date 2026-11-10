@@ -28,7 +28,10 @@ function mergeNoteSettings(
   defaults: PeriodicNoteSettings,
   value?: Partial<PeriodicNoteSettings>
 ): PeriodicNoteSettings {
-  return { ...defaults, ...(value || {}) };
+  return {
+    folder: typeof value?.folder === "string" ? value.folder : defaults.folder,
+    template: typeof value?.template === "string" ? value.template : defaults.template
+  };
 }
 
 type LegacyPeriod = {
@@ -204,7 +207,6 @@ export default class OxillCalendarPlugin extends Plugin {
   async loadSettings(): Promise<void> {
     const raw = (await this.loadData()) as LegacySettings | null;
     const legacyWeekly: Partial<PeriodicNoteSettings> = {
-      format: raw?.weeklyNoteFormat,
       folder: raw?.weeklyNoteFolder,
       template: raw?.weeklyNoteTemplate
     };
@@ -252,6 +254,16 @@ export default class OxillCalendarPlugin extends Plugin {
       noteIndicatorBorderWidth: typeof raw?.noteIndicatorBorderWidth === "number"
         ? Math.min(1.5, Math.max(0.5, raw.noteIndicatorBorderWidth))
         : DEFAULT_SETTINGS.noteIndicatorBorderWidth,
+      noteIndicatorStyle: raw?.noteIndicatorStyle === "underline" || raw?.noteIndicatorStyle === "line"
+        ? raw.noteIndicatorStyle
+        : "corner",
+      dailyNotesConnectorEnabled: raw?.dailyNotesConnectorEnabled === true,
+      dailyNotesConnectorFolder: typeof raw?.dailyNotesConnectorFolder === "string"
+        ? raw.dailyNotesConnectorFolder
+        : DEFAULT_SETTINGS.dailyNotesConnectorFolder,
+      dailyNotesConnectorProperty: typeof raw?.dailyNotesConnectorProperty === "string"
+        ? raw.dailyNotesConnectorProperty
+        : DEFAULT_SETTINGS.dailyNotesConnectorProperty,
       daily: mergeNoteSettings(DEFAULT_SETTINGS.daily, raw?.daily),
       weekly: mergeNoteSettings(DEFAULT_SETTINGS.weekly, raw?.weekly || legacyWeekly),
       monthly: mergeNoteSettings(DEFAULT_SETTINGS.monthly, raw?.monthly),

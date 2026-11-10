@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.0
+
+- Reorganized settings by feature and added compact segmented controls, live visual previews, conditional groups and an inline schedule archive.
+- Added folded-corner, overline and underline styles for the created-note indicator.
+- Calendar notes now always use `YYYY-MM-DD` filenames without automatic year subfolders.
+- Added an optional daily-note connector that resolves dates from a configurable property or a `YYYY-MM-DD` filename.
+- Added context-menu actions to change a schedule period or disable a schedule over a date range while preserving each period's weekday pattern.
+
 ## 1.8.3
 
 - Fixed schedule outlines being hidden by the base calendar-day border style.
