@@ -22,6 +22,7 @@ type LegacySettings = Omit<Partial<OxillCalendarSettings>, "schedules"> & {
   weeklyNoteFormat?: string;
   weeklyNoteFolder?: string;
   weeklyNoteTemplate?: string;
+  activeWorkPeriod?: unknown;
 };
 
 function mergeNoteSettings(
@@ -117,6 +118,15 @@ function migrateWorkPeriod(value: unknown): WorkPeriod | null {
     elapsedMs: typeof period.elapsedMs === "number" && Number.isFinite(period.elapsedMs)
       ? Math.max(0, period.elapsedMs)
       : 0,
+    pausedMs: typeof period.pausedMs === "number" && Number.isFinite(period.pausedMs)
+      ? Math.max(0, period.pausedMs)
+      : 0,
+    pausedSince: typeof period.pausedSince === "string"
+      ? period.pausedSince
+      : period.runningSince || period.endedAt
+        ? null
+        : moment().toISOString(),
+    untimed: period.untimed === true,
     description: typeof period.description === "string" ? period.description : ""
   };
 }
@@ -182,16 +192,15 @@ export default class OxillCalendarPlugin extends Plugin {
     });
     this.addCommand({
       id: "toggle-work-timer",
-      name: t("Запустить или остановить рабочий период", "Start or stop work period"),
+      name: t("Запустить рабочий период", "Start work period"),
       callback: () => {
-        if (this.settings.activeWorkPeriod) void this.workTimer.stop();
-        else void this.workTimer.start();
+        void this.workTimer.start();
       }
     });
     this.addCommand({
       id: "pause-work-timer",
-      name: t("Поставить рабочий период на паузу или продолжить", "Pause or resume work period"),
-      callback: () => void this.workTimer.togglePause()
+      name: t("Открыть управление рабочими периодами", "Open work-period controls"),
+      callback: () => void this.openWorkPeriodsView()
     });
     this.addCommand({
       id: "open-work-periods",
@@ -239,10 +248,20 @@ export default class OxillCalendarPlugin extends Plugin {
       workPeriodReportTemplateFile: typeof raw?.workPeriodReportTemplateFile === "string"
         ? raw.workPeriodReportTemplateFile
         : DEFAULT_SETTINGS.workPeriodReportTemplateFile,
+      untimedWorkPeriodReportTemplateFile: typeof raw?.untimedWorkPeriodReportTemplateFile === "string"
+        ? raw.untimedWorkPeriodReportTemplateFile
+        : DEFAULT_SETTINGS.untimedWorkPeriodReportTemplateFile,
       workPeriodReportTemplate: typeof raw?.workPeriodReportTemplate === "string"
+        && raw.workPeriodReportTemplate !== "- {{start}}–{{end}} · {{duration}} — {{description}}"
         ? raw.workPeriodReportTemplate
         : DEFAULT_SETTINGS.workPeriodReportTemplate,
-      activeWorkPeriod: migrateWorkPeriod(raw?.activeWorkPeriod),
+      activeWorkPeriods: Array.isArray(raw?.activeWorkPeriods)
+        ? raw.activeWorkPeriods
+          .map((period) => migrateWorkPeriod(period))
+          .filter((period): period is WorkPeriod => period !== null)
+          .slice(0, 2)
+        : [migrateWorkPeriod(raw?.activeWorkPeriod)]
+          .filter((period): period is WorkPeriod => period !== null),
       pendingWorkPeriods: Array.isArray(raw?.pendingWorkPeriods)
         ? raw.pendingWorkPeriods
           .map((period) => migrateWorkPeriod(period))

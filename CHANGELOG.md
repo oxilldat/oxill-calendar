@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.10.0
+
+- Added up to two independent simultaneous work timers in the Work periods sidebar.
+- Added untimed work entries with a separate searchable Markdown report template and basic-template creator.
+- Added independent work and pause accounting with state-specific blue and red timer displays.
+- Added `{{workDuration}}` and `{{pauseDuration}}` report variables while `{{duration}}` includes the complete session.
+- Replaced the status-bar timer with compact file-manager-style controls in the Work periods view.
+- Migrated existing active timers and legacy basic templates without overwriting customized template files.
+
 ## 1.9.0
 
 - Reorganized settings by feature and added compact segmented controls, live visual previews, conditional groups and an inline schedule archive.

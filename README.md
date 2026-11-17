@@ -64,7 +64,7 @@ Add `oxilldat/oxill-calendar` to BRAT, install the plugin and enable it in Obsid
 4. Create custom statuses with names and colors.
 5. Click a date to open its note or right-click it to assign statuses.
 
-To track work sessions, enable **Work periods** in the plugin settings and select a Markdown report template. Use the information button beside the template field to see the supported `{{date}}`, `{{start}}`, `{{end}}`, `{{duration}}` and `{{description}}` variables. Start the timer from the status bar, add a description during or after the session, then save the report to the corresponding daily note.
+To track work sessions, enable **Work periods** in the plugin settings and select a Markdown report template. The side panel supports two simultaneous timers and reports without a timer, with a separate template for untimed entries. Pauses are included in `{{duration}}`; use `{{workDuration}}` and `{{pauseDuration}}` to show work and pause time separately. Add a description during or after the session, then save the report to the corresponding daily note.
 
 A fresh installation contains no schedules, statuses or user data. Everything is created locally in the settings of the current vault.
 

@@ -1,4 +1,4 @@
-import { Notice, TFile, normalizePath, setIcon } from "obsidian";
+import { Notice, TFile, normalizePath } from "obsidian";
 
 import type OxillCalendarPlugin from "./main";
 import { moment } from "./moment";
@@ -14,6 +14,17 @@ export function workPeriodDuration(period: WorkPeriod, now = Date.now()): number
     ? Math.max(0, now - moment(period.runningSince).valueOf())
     : 0;
   return Math.max(0, period.elapsedMs + runningMs);
+}
+
+export function workPeriodPausedDuration(period: WorkPeriod, now = Date.now()): number {
+  const currentPause = period.pausedSince
+    ? Math.max(0, now - moment(period.pausedSince).valueOf())
+    : 0;
+  return Math.max(0, period.pausedMs + currentPause);
+}
+
+export function workPeriodTotalDuration(period: WorkPeriod, now = Date.now()): number {
+  return workPeriodDuration(period, now) + workPeriodPausedDuration(period, now);
 }
 
 export function formatDuration(milliseconds: number): string {
@@ -43,47 +54,33 @@ function renderReport(template: string, period: WorkPeriod): string {
       end.format(format || "HH:mm"))
     .replace(/{{date(?::([^}]+))?}}/g, (_match, format?: string) =>
       start.format(format || "YYYY-MM-DD"))
-    .replaceAll("{{duration}}", formatDuration(period.elapsedMs))
+    .replaceAll("{{duration}}", formatDuration(period.elapsedMs + period.pausedMs))
+    .replaceAll("{{workDuration}}", formatDuration(period.elapsedMs))
+    .replaceAll("{{pauseDuration}}", formatDuration(period.pausedMs))
     .replaceAll("{{description}}", period.description.trim());
 }
 
 export class WorkTimerManager {
-  private readonly statusEl: HTMLElement;
-  private readonly primaryButton: HTMLButtonElement;
-  private readonly pauseButton: HTMLButtonElement;
-
   constructor(private readonly plugin: OxillCalendarPlugin) {
-    this.statusEl = plugin.addStatusBarItem();
-    this.statusEl.addClass("oxill-calendar-work-timer-status");
-    this.primaryButton = this.statusEl.createEl("button", {
-      cls: "oxill-calendar-work-timer-primary",
-      attr: { type: "button" }
-    });
-    this.pauseButton = this.statusEl.createEl("button", {
-      cls: "clickable-icon oxill-calendar-work-timer-pause",
-      attr: { type: "button", "aria-label": t("Пауза", "Pause") }
-    });
-    this.primaryButton.addEventListener("click", () => {
-      if (this.plugin.settings.activeWorkPeriod) void this.stop();
-      else void this.start();
-    });
-    this.pauseButton.addEventListener("click", () => void this.togglePause());
-    plugin.registerInterval(window.setInterval(() => this.refreshStatus(), 1000));
-    this.refreshStatus();
   }
 
   async restorePaused(): Promise<void> {
-    const active = this.plugin.settings.activeWorkPeriod;
-    if (!active?.runningSince) return;
-    active.elapsedMs = workPeriodDuration(active);
-    active.runningSince = null;
+    let changed = false;
+    this.plugin.settings.activeWorkPeriods.forEach((active) => {
+      if (!active.runningSince) return;
+      active.elapsedMs = workPeriodDuration(active);
+      active.runningSince = null;
+      active.pausedSince = moment().toISOString();
+      changed = true;
+    });
+    if (!changed) return;
     await this.plugin.saveSettings();
     this.refresh();
   }
 
   async setEnabled(enabled: boolean): Promise<void> {
     this.plugin.settings.workTimerEnabled = enabled;
-    if (!enabled) await this.pause();
+    if (!enabled) await Promise.all(this.plugin.settings.activeWorkPeriods.map((period) => this.pause(period.id)));
     await this.plugin.saveSettings();
     this.refresh();
   }
@@ -93,73 +90,96 @@ export class WorkTimerManager {
       new Notice(t("Включите учёт рабочих периодов в настройках", "Enable work-period tracking in settings"));
       return;
     }
-    const active = this.plugin.settings.activeWorkPeriod;
-    if (active) {
-      if (!active.runningSince) await this.resume();
+    if (this.plugin.settings.activeWorkPeriods.length >= 2) {
+      new Notice(t("Одновременно можно запустить не больше двух таймеров", "You can run no more than two timers at once"));
       return;
     }
     const now = moment().toISOString();
-    this.plugin.settings.activeWorkPeriod = {
+    this.plugin.settings.activeWorkPeriods.push({
       id: createId("work-period"),
       startedAt: now,
       endedAt: null,
       runningSince: now,
       elapsedMs: 0,
+      pausedMs: 0,
+      pausedSince: null,
+      untimed: false,
       description: ""
-    };
+    });
     await this.plugin.saveSettings();
     this.refresh();
   }
 
-  async pause(): Promise<void> {
-    const active = this.plugin.settings.activeWorkPeriod;
+  async pause(id: string): Promise<void> {
+    const active = this.plugin.settings.activeWorkPeriods.find((period) => period.id === id);
     if (!active?.runningSince) return;
     active.elapsedMs = workPeriodDuration(active);
     active.runningSince = null;
+    active.pausedSince = moment().toISOString();
     await this.plugin.saveSettings();
     this.refresh();
   }
 
-  async resume(): Promise<void> {
-    const active = this.plugin.settings.activeWorkPeriod;
+  async resume(id: string): Promise<void> {
+    const active = this.plugin.settings.activeWorkPeriods.find((period) => period.id === id);
     if (!active || active.runningSince || !this.plugin.settings.workTimerEnabled) return;
+    active.pausedMs = workPeriodPausedDuration(active);
+    active.pausedSince = null;
     active.runningSince = moment().toISOString();
     await this.plugin.saveSettings();
     this.refresh();
   }
 
-  async togglePause(): Promise<void> {
-    const active = this.plugin.settings.activeWorkPeriod;
+  async togglePause(id: string): Promise<void> {
+    const active = this.plugin.settings.activeWorkPeriods.find((period) => period.id === id);
     if (!active) return;
-    if (active.runningSince) await this.pause();
-    else await this.resume();
+    if (active.runningSince) await this.pause(id);
+    else await this.resume(id);
   }
 
-  async stop(): Promise<void> {
-    const active = this.plugin.settings.activeWorkPeriod;
+  async stop(id: string): Promise<void> {
+    const active = this.plugin.settings.activeWorkPeriods.find((period) => period.id === id);
     if (!active) return;
     active.elapsedMs = workPeriodDuration(active);
+    active.pausedMs = workPeriodPausedDuration(active);
     active.runningSince = null;
+    active.pausedSince = null;
     active.endedAt = moment().toISOString();
     this.plugin.settings.pendingWorkPeriods.push(active);
-    this.plugin.settings.activeWorkPeriod = null;
+    this.plugin.settings.activeWorkPeriods = this.plugin.settings.activeWorkPeriods
+      .filter((period) => period.id !== id);
     await this.plugin.saveSettings();
     this.refresh();
     await this.plugin.openWorkPeriodsView();
   }
 
+  async createWithoutTimer(): Promise<string | null> {
+    if (!this.plugin.settings.workTimerEnabled) {
+      new Notice(t("Включите учёт рабочих периодов в настройках", "Enable work-period tracking in settings"));
+      return null;
+    }
+    const now = moment().toISOString();
+    const id = createId("work-period");
+    this.plugin.settings.pendingWorkPeriods.push({
+      id, startedAt: now, endedAt: now, runningSince: null,
+      elapsedMs: 0, pausedMs: 0, pausedSince: null, untimed: true, description: ""
+    });
+    await this.plugin.saveSettings();
+    this.refresh();
+    return id;
+  }
+
   async updateDescription(id: string, description: string): Promise<void> {
-    const active = this.plugin.settings.activeWorkPeriod;
-    if (active?.id === id) active.description = description;
+    const active = this.plugin.settings.activeWorkPeriods.find((period) => period.id === id);
+    if (active) active.description = description;
     const pending = this.plugin.settings.pendingWorkPeriods.find((period) => period.id === id);
     if (pending) pending.description = description;
     await this.plugin.saveSettings();
   }
 
   async deletePeriod(id: string): Promise<void> {
-    if (this.plugin.settings.activeWorkPeriod?.id === id) {
-      this.plugin.settings.activeWorkPeriod = null;
-    }
+    this.plugin.settings.activeWorkPeriods = this.plugin.settings.activeWorkPeriods
+      .filter((period) => period.id !== id);
     this.plugin.settings.pendingWorkPeriods = this.plugin.settings.pendingWorkPeriods
       .filter((period) => period.id !== id);
     await this.plugin.saveSettings();
@@ -175,7 +195,7 @@ export class WorkTimerManager {
     }
     try {
       const date = moment(period.startedAt);
-      const template = await this.loadReportTemplate();
+      const template = await this.loadReportTemplate(period);
       const report = renderReport(template, period).trim();
       const file = await getOrCreatePeriodicNote(this.plugin.app, this.plugin.settings, "daily", date);
       await this.plugin.app.vault.process(file, (content) => {
@@ -196,9 +216,13 @@ export class WorkTimerManager {
     }
   }
 
-  private async loadReportTemplate(): Promise<string> {
-    const templatePath = this.plugin.settings.workPeriodReportTemplateFile.trim();
-    if (!templatePath) return this.plugin.settings.workPeriodReportTemplate;
+  private async loadReportTemplate(period: WorkPeriod): Promise<string> {
+    const templatePath = (period.untimed
+      ? this.plugin.settings.untimedWorkPeriodReportTemplateFile
+      : this.plugin.settings.workPeriodReportTemplateFile).trim();
+    if (!templatePath) {
+      return period.untimed ? "- {{description}}" : this.plugin.settings.workPeriodReportTemplate;
+    }
 
     const templateFile = this.plugin.app.vault.getAbstractFileByPath(normalizePath(templatePath));
     if (!(templateFile instanceof TFile)) {
@@ -216,25 +240,6 @@ export class WorkTimerManager {
   }
 
   refresh(): void {
-    this.refreshStatus();
     this.plugin.refreshWorkPeriodViews();
-  }
-
-  private refreshStatus(): void {
-    this.statusEl.toggleClass("is-hidden", !this.plugin.settings.workTimerEnabled);
-    const active = this.plugin.settings.activeWorkPeriod;
-    if (!active) {
-      this.primaryButton.setText(t("Старт", "Start"));
-      this.primaryButton.title = t("Начать рабочий период", "Start work period");
-      this.pauseButton.hide();
-      return;
-    }
-    this.primaryButton.setText(`${t("Стоп", "Stop")} · ${formatClock(workPeriodDuration(active))}`);
-    this.primaryButton.title = t("Остановить рабочий период", "Stop work period");
-    this.pauseButton.show();
-    const paused = !active.runningSince;
-    setIcon(this.pauseButton, paused ? "play" : "pause");
-    this.pauseButton.setAttribute("aria-label", paused ? t("Продолжить", "Resume") : t("Пауза", "Pause"));
-    this.pauseButton.title = paused ? t("Продолжить", "Resume") : t("Пауза", "Pause");
   }
 }

@@ -4,7 +4,7 @@ import type OxillCalendarPlugin from "./main";
 import { moment } from "./moment";
 import { t } from "./i18n";
 import type { WorkPeriod } from "./types";
-import { formatClock, formatDuration, workPeriodDuration } from "./work-timer";
+import { formatClock, formatDuration, workPeriodDuration, workPeriodPausedDuration } from "./work-timer";
 
 export const WORK_PERIOD_VIEW_TYPE = "oxill-calendar-work-periods";
 
@@ -49,11 +49,28 @@ export class WorkPeriodView extends ItemView {
     container.empty();
     container.addClass("oxill-calendar-work-period-view");
 
-    const heading = container.createDiv({ cls: "oxill-calendar-work-period-heading" });
-    heading.createDiv({ cls: "oxill-calendar-work-period-title", text: t("Рабочие периоды", "Work periods") });
-    heading.createDiv({
-      cls: "oxill-calendar-work-period-subtitle",
-      text: t("Опишите результат и сохраните период в дневную заметку.", "Describe the result and save the period to your daily note.")
+    const launcher = container.createDiv({ cls: "oxill-calendar-work-period-launcher" });
+    const start = launcher.createEl("button", {
+      cls: "clickable-icon",
+      attr: { type: "button", "aria-label": t("Старт", "Start"), title: t("Старт", "Start") }
+    });
+    setIcon(start, "play");
+    start.addEventListener("click", () => void this.plugin.workTimer.start());
+    const manual = launcher.createEl("button", {
+      cls: "clickable-icon",
+      attr: {
+        type: "button",
+        "aria-label": t("Старт без таймера", "Start without timer"),
+        title: t("Старт без таймера", "Start without timer")
+      }
+    });
+    setIcon(manual, "square-pen");
+    manual.addEventListener("click", async () => {
+      const id = await this.plugin.workTimer.createWithoutTimer();
+      window.requestAnimationFrame(() => {
+        if (!id) return;
+        this.contentEl.querySelector<HTMLTextAreaElement>(`[data-period-id="${id}"] .oxill-calendar-work-period-description`)?.focus();
+      });
     });
 
     if (!this.plugin.settings.workTimerEnabled) {
@@ -63,11 +80,11 @@ export class WorkPeriodView extends ItemView {
       });
     }
 
-    const active = this.plugin.settings.activeWorkPeriod;
-    if (active) {
+    const active = this.plugin.settings.activeWorkPeriods;
+    if (active.length > 0) {
       const section = container.createDiv({ cls: "oxill-calendar-work-period-section" });
       section.createDiv({ cls: "oxill-calendar-work-period-section-title", text: t("Текущий период", "Current period") });
-      this.renderPeriod(section, active, true);
+      active.forEach((period) => this.renderPeriod(section, period, true));
     }
 
     const pendingSection = container.createDiv({ cls: "oxill-calendar-work-period-section" });
@@ -105,10 +122,22 @@ export class WorkPeriodView extends ItemView {
         ? `${start.format(t("DD.MM.YYYY", "MM/DD/YYYY"))} · ${start.format("HH:mm")}–${end.format("HH:mm")}`
         : `${start.format(t("DD.MM.YYYY", "MM/DD/YYYY"))} · ${t("с", "from")} ${start.format("HH:mm")}`
     });
-    header.createDiv({
-      cls: "oxill-calendar-work-period-duration",
-      text: active ? formatClock(workPeriodDuration(period)) : formatDuration(period.elapsedMs)
-    });
+    if (active) {
+      const paused = !period.runningSince;
+      header.createDiv({
+        cls: `oxill-calendar-work-period-duration ${paused ? "is-pause" : "is-work"}`,
+        text: formatClock(paused ? workPeriodPausedDuration(period) : workPeriodDuration(period)),
+        attr: {
+          title: paused ? t("Время текущей и прошлых пауз", "Current and previous pause time") : t("Чистое время работы", "Net work time"),
+          "aria-label": paused ? t("Время пауз", "Pause time") : t("Время работы", "Work time")
+        }
+      });
+    } else {
+      header.createDiv({
+        cls: "oxill-calendar-work-period-duration",
+        text: formatDuration(period.elapsedMs + period.pausedMs)
+      });
+    }
 
     const textarea = card.createEl("textarea", {
       cls: "oxill-calendar-work-period-description",
@@ -127,9 +156,9 @@ export class WorkPeriodView extends ItemView {
       });
       setIcon(pause, period.runningSince ? "pause" : "play");
       pause.createSpan({ text: period.runningSince ? t("Пауза", "Pause") : t("Продолжить", "Resume") });
-      pause.addEventListener("click", () => void this.plugin.workTimer.togglePause());
+      pause.addEventListener("click", () => void this.plugin.workTimer.togglePause(period.id));
       actions.createEl("button", { text: t("Стоп", "Stop") }).addEventListener("click", () => {
-        void this.plugin.workTimer.stop();
+        void this.plugin.workTimer.stop(period.id);
       });
     } else {
       const save = actions.createEl("button", { cls: "mod-cta oxill-calendar-work-period-save" });
@@ -159,10 +188,11 @@ export class WorkPeriodView extends ItemView {
   }
 
   private updateDurations(): void {
-    const active = this.plugin.settings.activeWorkPeriod;
-    if (!active) return;
-    const card = this.contentEl.querySelector<HTMLElement>(`[data-period-id="${active.id}"]`);
-    card?.querySelector<HTMLElement>(".oxill-calendar-work-period-duration")
-      ?.setText(formatClock(workPeriodDuration(active)));
+    this.plugin.settings.activeWorkPeriods.forEach((active) => {
+      const card = this.contentEl.querySelector<HTMLElement>(`[data-period-id="${active.id}"]`);
+      card?.querySelector<HTMLElement>(".oxill-calendar-work-period-duration")?.setText(
+        formatClock(active.runningSince ? workPeriodDuration(active) : workPeriodPausedDuration(active))
+      );
+    });
   }
 }

@@ -214,7 +214,9 @@ class WorkReportTemplateHelpModal extends Modal {
       ["{{start:HH:mm:ss}}", t("Время начала в указанном формате", "Start time using the specified format")],
       ["{{end}}", t("Время окончания: HH:mm", "End time: HH:mm")],
       ["{{end:HH:mm:ss}}", t("Время окончания в указанном формате", "End time using the specified format")],
-      ["{{duration}}", t("Продолжительность периода", "Period duration")],
+      ["{{duration}}", t("Общая длительность с паузами", "Total duration including pauses")],
+      ["{{workDuration}}", t("Время работы без пауз", "Work time excluding pauses")],
+      ["{{pauseDuration}}", t("Общая длительность пауз", "Total pause duration")],
       ["{{description}}", t("Описание выполненной работы", "Description of completed work")]
     ];
 
@@ -665,7 +667,7 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     let timerDetails: HTMLElement;
     new Setting(workTimerGroup)
       .setName(t("Включить таймер", "Enable timer"))
-      .setDesc(t("Показывать кнопку «Старт» и управление рабочим периодом.", "Show the Start button and work-period controls."))
+      .setDesc(t("Включить до двух одновременных таймеров и отчёты без таймера.", "Enable up to two simultaneous timers and untimed reports."))
       .addToggle((toggle) => toggle
         .setValue(this.plugin.settings.workTimerEnabled)
         .onChange((value) => {
@@ -698,6 +700,36 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
         .onClick(() => {
           void this.createBaseWorkReportTemplate().then((path) => {
             if (path && reportTemplateInput) reportTemplateInput.value = path;
+          });
+        }))
+      .addExtraButton((button) => button
+        .setIcon("info")
+        .setTooltip(t("Конструкции шаблона", "Template variables"))
+        .onClick(() => new WorkReportTemplateHelpModal(this.app).open()));
+    let untimedTemplateInput: HTMLInputElement | null = null;
+    new Setting(timerDetails)
+      .setName(t("Шаблон без таймера", "Untimed report template"))
+      .setDesc(t("Markdown-файл для записей, созданных кнопкой «Старт без таймера».", "Markdown file for entries created with Start without timer."))
+      .addText((text) => {
+        untimedTemplateInput = text.inputEl;
+        text
+          .setPlaceholder(t("Начните вводить имя файла…", "Start typing a filename…"))
+          .setValue(this.plugin.settings.untimedWorkPeriodReportTemplateFile)
+          .onChange((value) => {
+            this.plugin.settings.untimedWorkPeriodReportTemplateFile = value.trim();
+            void this.plugin.saveSettings();
+          });
+        new MarkdownFileSuggest(this.app, text.inputEl, (path) => {
+          this.plugin.settings.untimedWorkPeriodReportTemplateFile = path;
+          void this.plugin.saveSettings();
+        });
+      })
+      .addExtraButton((button) => button
+        .setIcon("plus")
+        .setTooltip(t("Создать базовый шаблон в корне", "Create a basic template in the vault root"))
+        .onClick(() => {
+          void this.createBaseUntimedReportTemplate().then((path) => {
+            if (path && untimedTemplateInput) untimedTemplateInput.value = path;
           });
         }))
       .addExtraButton((button) => button
@@ -863,6 +895,11 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
   private async createBaseWorkReportTemplate(): Promise<string | null> {
     const path = normalizePath(t("Шаблон рабочих периодов.md", "Work period template.md"));
     const existing = this.app.vault.getAbstractFileByPath(path);
+    const legacyTemplate = "- {{start}}–{{end}} · {{duration}} — {{description}}";
+    const basicTemplate = t(
+      "- {{start}}–{{end}} · {{duration}} — {{description}}\n  - Работа: {{workDuration}}\n  - Пауза: {{pauseDuration}}\n",
+      "- {{start}}–{{end}} · {{duration}} — {{description}}\n  - Work: {{workDuration}}\n  - Pause: {{pauseDuration}}\n"
+    );
 
     if (existing && !(existing instanceof TFile)) {
       new Notice(t(`Не удалось создать шаблон: «${path}» уже занято папкой`, `Could not create the template: “${path}” is already used by a folder`));
@@ -871,10 +908,16 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
 
     try {
       if (!existing) {
-        await this.app.vault.create(path, "- {{start}}–{{end}} · {{duration}} — {{description}}\n");
+        await this.app.vault.create(path, basicTemplate);
         new Notice(t("Базовый шаблон создан в корне хранилища", "A basic template was created in the vault root"));
       } else {
-        new Notice(t("Базовый шаблон уже существует и выбран", "The basic template already exists and was selected"));
+        const currentTemplate = await this.app.vault.cachedRead(existing);
+        if (currentTemplate.trim() === legacyTemplate) {
+          await this.app.vault.modify(existing, basicTemplate);
+          new Notice(t("Базовый шаблон обновлён и выбран", "The basic template was updated and selected"));
+        } else {
+          new Notice(t("Базовый шаблон уже существует и выбран", "The basic template already exists and was selected"));
+        }
       }
 
       this.plugin.settings.workPeriodReportTemplateFile = path;
@@ -883,6 +926,30 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     } catch (error) {
       console.error("Oxill Calendar: failed to create the work-period template", error);
       new Notice(t("Не удалось создать базовый шаблон", "Could not create the basic template"));
+      return null;
+    }
+  }
+
+  private async createBaseUntimedReportTemplate(): Promise<string | null> {
+    const path = normalizePath(t("Шаблон периода без таймера.md", "Untimed work period template.md"));
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing && !(existing instanceof TFile)) {
+      new Notice(t(`Не удалось создать шаблон: «${path}» уже занято папкой`, `Could not create the template: “${path}” is already used by a folder`));
+      return null;
+    }
+    try {
+      if (!existing) {
+        await this.app.vault.create(path, "- {{description}}\n");
+        new Notice(t("Базовый шаблон без таймера создан в корне хранилища", "A basic untimed template was created in the vault root"));
+      } else {
+        new Notice(t("Шаблон без таймера уже существует и выбран", "The untimed template already exists and was selected"));
+      }
+      this.plugin.settings.untimedWorkPeriodReportTemplateFile = path;
+      await this.plugin.saveSettings();
+      return path;
+    } catch (error) {
+      console.error("Oxill Calendar: failed to create the untimed work-period template", error);
+      new Notice(t("Не удалось создать шаблон без таймера", "Could not create the untimed template"));
       return null;
     }
   }

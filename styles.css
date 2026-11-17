@@ -232,7 +232,7 @@
   background: var(--background-secondary);
   border-radius: var(--radius-l, 12px);
   display: flex;
-  gap: 14px;
+  gap: 28px;
   margin-top: 24px;
   padding: 12px 14px;
 }
@@ -644,7 +644,7 @@
 .oxill-calendar-status-preview {
   align-items: center;
   display: inline-flex;
-  gap: 4px;
+  gap: 14px;
   padding: 0 4px;
 }
 
@@ -1158,64 +1158,33 @@
   }
 }
 
-.oxill-calendar-work-timer-status {
-  align-items: center;
-  display: inline-flex;
-  gap: 3px;
-  line-height: 1;
-}
-
-.oxill-calendar-work-timer-status.is-hidden {
-  display: none;
-}
-
-.oxill-calendar-work-timer-status button {
-  appearance: none;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: var(--font-ui-smaller);
-  height: 16px;
-  line-height: 1;
-  margin: 0;
-  min-height: 0;
-  padding: 0 2px;
-}
-
-.oxill-calendar-work-timer-status button:hover {
-  color: var(--text-normal);
-}
-
-.oxill-calendar-work-timer-pause {
-  width: 16px;
-}
-
-.oxill-calendar-work-timer-pause svg {
-  height: 13px;
-  width: 13px;
-}
-
 .oxill-calendar-work-period-view {
   padding: 16px;
 }
 
-.oxill-calendar-work-period-heading {
-  margin-bottom: 22px;
+.oxill-calendar-work-period-launcher {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin: 0 auto 18px;
 }
 
-.oxill-calendar-work-period-title {
-  font-size: 1.35em;
-  font-weight: 650;
-  letter-spacing: -0.015em;
+.oxill-calendar-work-period-launcher button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--clickable-icon-radius);
+  box-shadow: none;
+  display: inline-flex;
+  height: var(--clickable-icon-size);
+  justify-content: center;
+  min-height: 0;
+  padding: var(--clickable-icon-padding);
+  width: var(--clickable-icon-size);
 }
 
-.oxill-calendar-work-period-subtitle {
-  color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
-  line-height: 1.45;
-  margin-top: 3px;
+.oxill-calendar-work-period-launcher button:hover {
+  background: var(--background-modifier-hover);
 }
 
 .oxill-calendar-work-period-section {
@@ -1277,6 +1246,21 @@
   font-variant-numeric: tabular-nums;
   padding: 3px 8px;
   white-space: nowrap;
+}
+
+.oxill-calendar-work-period-duration.is-work,
+.oxill-calendar-work-period-duration.is-pause {
+  background: transparent;
+  border: 1px solid;
+  color: var(--text-normal);
+}
+
+.oxill-calendar-work-period-duration.is-work {
+  border-color: var(--color-blue);
+}
+
+.oxill-calendar-work-period-duration.is-pause {
+  border-color: var(--color-red);
 }
 
 .oxill-calendar-work-period-description {

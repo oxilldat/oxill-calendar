@@ -36,6 +36,9 @@ export interface WorkPeriod {
   endedAt: string | null;
   runningSince: string | null;
   elapsedMs: number;
+  pausedMs: number;
+  pausedSince: string | null;
+  untimed: boolean;
   description: string;
 }
 
@@ -52,8 +55,9 @@ export interface OxillCalendarSettings {
   dailyWeekdayTemplates: Record<string, string>;
   workTimerEnabled: boolean;
   workPeriodReportTemplateFile: string;
+  untimedWorkPeriodReportTemplateFile: string;
   workPeriodReportTemplate: string;
-  activeWorkPeriod: WorkPeriod | null;
+  activeWorkPeriods: WorkPeriod[];
   pendingWorkPeriods: WorkPeriod[];
   noteIndicatorColor: string;
   noteIndicatorBorderWidth: number;
@@ -93,8 +97,9 @@ export const DEFAULT_SETTINGS: OxillCalendarSettings = {
   dailyWeekdayTemplates: {},
   workTimerEnabled: false,
   workPeriodReportTemplateFile: "",
-  workPeriodReportTemplate: "- {{start}}–{{end}} · {{duration}} — {{description}}",
-  activeWorkPeriod: null,
+  untimedWorkPeriodReportTemplateFile: "",
+  workPeriodReportTemplate: "- {{start}}–{{end}} · {{duration}} — {{description}}\n  - ⏱ {{workDuration}}\n  - ⏸ {{pauseDuration}}",
+  activeWorkPeriods: [],
   pendingWorkPeriods: [],
   noteIndicatorColor: "#A8C7FA",
   noteIndicatorBorderWidth: 1,
