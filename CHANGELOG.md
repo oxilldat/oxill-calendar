@@ -1,8 +1,12 @@
 # Changelog
 
+## 1.10.2
+
+- Removed automatic renaming of existing notes. Weekly filename correction now applies only when a new note is created.
+
 ## 1.10.1
 
-- Fixed weekly note filenames by restoring the ISO week format `GGGG-[W]WW` and migrating date-named weekly notes when opened.
+- Fixed weekly note filenames by restoring the ISO week format `GGGG-[W]WW`.
 
 ## 1.10.0
 
