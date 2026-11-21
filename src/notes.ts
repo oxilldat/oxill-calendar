@@ -45,17 +45,39 @@ export function noteDate(
   return date.clone();
 }
 
+function noteTitle(
+  settings: OxillCalendarSettings,
+  kind: NoteKind,
+  date: Moment
+): string {
+  const normalizedDate = noteDate(settings, kind, date).locale("ru");
+  if (kind !== "weekly") return normalizedDate.format("YYYY-MM-DD");
+  const weekDate = settings.weekStartsOn === "sunday"
+    ? normalizedDate.clone().add(1, "day")
+    : normalizedDate;
+  return weekDate.format("GGGG-[W]WW");
+}
+
+function legacyWeeklyNotePath(
+  settings: OxillCalendarSettings,
+  date: Moment
+): string {
+  const config = noteSettingsFor(settings, "weekly");
+  const normalizedDate = noteDate(settings, "weekly", date).locale("ru");
+  const titleDate = settings.weekStartsOn === "sunday"
+    ? normalizedDate.clone().add(1, "day")
+    : normalizedDate;
+  const title = titleDate.format("YYYY-MM-DD");
+  return normalizePath(config.folder ? `${config.folder}/${title}.md` : `${title}.md`);
+}
+
 export function getNotePath(
   settings: OxillCalendarSettings,
   kind: NoteKind,
   date: Moment
 ): string {
   const config = noteSettingsFor(settings, kind);
-  const normalizedDate = noteDate(settings, kind, date).locale("ru");
-  const titleDate = kind === "weekly" && settings.weekStartsOn === "sunday"
-    ? normalizedDate.clone().add(1, "day")
-    : normalizedDate;
-  const title = titleDate.format("YYYY-MM-DD");
+  const title = noteTitle(settings, kind, date);
   return normalizePath(config.folder ? `${config.folder}/${title}.md` : `${title}.md`);
 }
 
@@ -146,10 +168,7 @@ async function createNote(
 ): Promise<TFile> {
   const config = noteSettingsFor(settings, kind);
   const normalizedDate = noteDate(settings, kind, date).locale("ru");
-  const titleDate = kind === "weekly" && settings.weekStartsOn === "sunday"
-    ? normalizedDate.clone().add(1, "day")
-    : normalizedDate;
-  const title = titleDate.format("YYYY-MM-DD");
+  const title = noteTitle(settings, kind, date);
   const path = getNotePath(settings, kind, date);
   const parent = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
   await ensureFolder(app, parent);
@@ -183,6 +202,13 @@ export async function getOrCreatePeriodicNote(
   const path = getNotePath(settings, kind, date);
   const existing = app.vault.getAbstractFileByPath(path);
   if (existing instanceof TFile) return existing;
+  if (kind === "weekly") {
+    const legacy = app.vault.getAbstractFileByPath(legacyWeeklyNotePath(settings, date));
+    if (legacy instanceof TFile) {
+      await app.fileManager.renameFile(legacy, path);
+      return legacy;
+    }
+  }
   if (kind === "daily") {
     const connected = connectedDailyNoteForDate(app, settings, date);
     if (connected) return connected;
@@ -246,6 +272,18 @@ export async function openPeriodicNote(
   if (existing instanceof TFile) {
     await openFile(existing);
     return;
+  }
+  if (kind === "weekly") {
+    const legacy = app.vault.getAbstractFileByPath(legacyWeeklyNotePath(settings, date));
+    if (legacy instanceof TFile) {
+      try {
+        await app.fileManager.renameFile(legacy, path);
+        await openFile(legacy);
+      } catch (error) {
+        new Notice(error instanceof Error ? error.message : t("Не удалось переименовать недельную заметку", "Could not rename the weekly note"));
+      }
+      return;
+    }
   }
   if (kind === "daily") {
     const connected = connectedDailyNoteForDate(app, settings, date);

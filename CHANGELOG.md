@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.1
+
+- Fixed weekly note filenames by restoring the ISO week format `GGGG-[W]WW` and migrating date-named weekly notes when opened.
+
 ## 1.10.0
 
 - Added up to two independent simultaneous work timers in the Work periods sidebar.
