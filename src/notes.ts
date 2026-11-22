@@ -51,7 +51,8 @@ function noteTitle(
   date: Moment
 ): string {
   const normalizedDate = noteDate(settings, kind, date).locale("ru");
-  if (kind !== "weekly") return normalizedDate.format("YYYY-MM-DD");
+  if (kind === "daily") return normalizedDate.format("YYYY-MM-DD");
+  if (kind === "monthly") return normalizedDate.format("YYYY-MM");
   const weekDate = settings.weekStartsOn === "sunday"
     ? normalizedDate.clone().add(1, "day")
     : normalizedDate;

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.3
+
+- Corrected weekly and monthly filename descriptions in settings.
+- Restored `YYYY-MM` filenames for newly created monthly notes without modifying existing files.
+
 ## 1.10.2
 
 - Removed automatic renaming of existing notes. Weekly filename correction now applies only when a new note is created.

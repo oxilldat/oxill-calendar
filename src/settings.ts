@@ -1212,10 +1212,17 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
     });
     new Setting(body)
       .setName(t("Имя файла", "Filename"))
-      .setDesc(t(
-        "Фиксированный формат YYYY-MM-DD предотвращает совпадение дат разных лет.",
-        "The fixed YYYY-MM-DD format prevents dates from different years from colliding."
-      ));
+      .setDesc(kind === "weekly" ? t(
+          "Формат GGGG-[W]WW использует год и номер недели, например 2026-W47.",
+          "The GGGG-[W]WW format uses the year and week number, for example 2026-W47."
+        )
+        : kind === "monthly" ? t(
+          "Формат YYYY-MM использует год и месяц, например 2026-11.",
+          "The YYYY-MM format uses the year and month, for example 2026-11."
+        ) : t(
+          "Фиксированный формат YYYY-MM-DD предотвращает совпадение дат разных лет.",
+          "The fixed YYYY-MM-DD format prevents dates from different years from colliding."
+        ));
     new Setting(body).setName(kind === "daily" ? t("Шаблон по умолчанию", "Default template") : t("Шаблон", "Template")).setDesc(t("Путь к Markdown-файлу. Оставьте поле пустым, чтобы не применять шаблон.", "Path to a Markdown file. Leave empty to use no template.")).addText((text) => {
       text.setPlaceholder(t("Начните вводить имя файла…", "Start typing a filename…")).setValue(config.template).onChange((value) => {
         config.template = value.trim();

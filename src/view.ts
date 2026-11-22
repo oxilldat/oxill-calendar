@@ -209,7 +209,9 @@ export class CalendarView extends ItemView {
     for (const kind of candidates) {
       const config = this.plugin.settings[kind];
       if (normalizePath(config.folder) !== normalizePath(parentPath(file.path))) continue;
-      const format = kind === "weekly" ? "GGGG-[W]WW" : "YYYY-MM-DD";
+      const format = kind === "weekly"
+        ? "GGGG-[W]WW"
+        : kind === "monthly" ? "YYYY-MM" : "YYYY-MM-DD";
       const parsed = moment(file.basename, format, true);
       if (!parsed.isValid()) continue;
       if (kind === "weekly" && this.plugin.settings.weekStartsOn === "sunday") {
