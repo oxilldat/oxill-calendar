@@ -12,7 +12,7 @@ The plugin works locally inside your Obsidian vault. It contains no telemetry an
 - daily, weekly and monthly periodic notes;
 - optional daily note templates for each weekday;
 - configurable Monday or Sunday week start;
-- fixed `YYYY-MM-DD` filenames for daily notes, `GGGG-WWW` for weekly notes and `YYYY-MM` for monthly notes;
+- fixed `YYYY-MM-DD` filenames for daily notes, `YYYY-WWW` for weekly notes and `YYYY-MM` for monthly notes;
 - optional connection to existing daily notes by filename or a date property;
 - separate folders and templates for every calendar-note type;
 - searchable folder and Markdown template path suggestions;

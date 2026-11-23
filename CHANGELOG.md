@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.5
+
+- Replaced the ISO week-year token with the Obsidian-style `YYYY-[W]WW` weekly filename format.
+
 ## 1.10.4
 
 - Unified daily, weekly and monthly note creation around fixed filename formats shared with the settings descriptions.

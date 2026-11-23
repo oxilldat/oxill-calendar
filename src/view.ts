@@ -12,7 +12,7 @@ import {
 import type OxillCalendarPlugin from "./main";
 import { moment } from "./moment";
 import { getInterfaceLocale, t } from "./i18n";
-import { getConnectedDailyNotes, getNotePath, openPeriodicNote } from "./notes";
+import { getConnectedDailyNotes, getNotePath, noteFilenameFormat, openPeriodicNote } from "./notes";
 import {
   applyScheduleOverrideRange,
   dayScheduleTooltip,
@@ -209,9 +209,7 @@ export class CalendarView extends ItemView {
     for (const kind of candidates) {
       const config = this.plugin.settings[kind];
       if (normalizePath(config.folder) !== normalizePath(parentPath(file.path))) continue;
-      const format = kind === "weekly"
-        ? "GGGG-[W]WW"
-        : kind === "monthly" ? "YYYY-MM" : "YYYY-MM-DD";
+      const format = noteFilenameFormat(kind);
       const parsed = moment(file.basename, format, true);
       if (!parsed.isValid()) continue;
       if (kind === "weekly" && this.plugin.settings.weekStartsOn === "sunday") {

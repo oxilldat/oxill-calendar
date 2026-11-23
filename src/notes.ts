@@ -46,7 +46,7 @@ export function noteDate(
 }
 
 export function noteFilenameFormat(kind: NoteKind): string {
-  if (kind === "weekly") return "GGGG-[W]WW";
+  if (kind === "weekly") return "YYYY-[W]WW";
   if (kind === "monthly") return "YYYY-MM";
   return "YYYY-MM-DD";
 }
