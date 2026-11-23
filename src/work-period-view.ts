@@ -151,11 +151,12 @@ export class WorkPeriodView extends ItemView {
 
     const actions = card.createDiv({ cls: "oxill-calendar-work-period-actions" });
     if (active) {
+      const pauseLabel = period.runningSince ? t("Пауза", "Pause") : t("Продолжить", "Resume");
       const pause = actions.createEl("button", {
-        attr: { type: "button", "aria-label": period.runningSince ? t("Пауза", "Pause") : t("Продолжить", "Resume") }
+        cls: "clickable-icon oxill-calendar-work-period-toggle",
+        attr: { type: "button", "aria-label": pauseLabel, title: pauseLabel }
       });
       setIcon(pause, period.runningSince ? "pause" : "play");
-      pause.createSpan({ text: period.runningSince ? t("Пауза", "Pause") : t("Продолжить", "Resume") });
       pause.addEventListener("click", () => void this.plugin.workTimer.togglePause(period.id));
       actions.createEl("button", { text: t("Стоп", "Stop") }).addEventListener("click", () => {
         void this.plugin.workTimer.stop(period.id);

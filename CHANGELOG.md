@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.4
+
+- Unified daily, weekly and monthly note creation around fixed filename formats shared with the settings descriptions.
+- Added clear filename examples for every periodic note type in settings.
+- Replaced the wide pause and resume action with a compact file-manager-style icon button.
+
 ## 1.10.3
 
 - Corrected weekly and monthly filename descriptions in settings.

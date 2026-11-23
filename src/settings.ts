@@ -14,6 +14,7 @@ import type OxillCalendarPlugin from "./main";
 import authorAvatar from "../assets/ava.jpg";
 import { setInterfaceLanguage, t } from "./i18n";
 import { moment } from "./moment";
+import { noteFilenameFormat } from "./notes";
 import { FolderSuggest, MarkdownFileSuggest } from "./suggest";
 import {
   createPeriod,
@@ -1211,17 +1212,17 @@ export class OxillCalendarSettingTab extends PluginSettingTab {
       });
     });
     new Setting(body)
-      .setName(t("Имя файла", "Filename"))
+      .setName(t("Формат имени файла", "Filename format"))
       .setDesc(kind === "weekly" ? t(
-          "Формат GGGG-[W]WW использует год и номер недели, например 2026-W47.",
-          "The GGGG-[W]WW format uses the year and week number, for example 2026-W47."
+          `Год-неделя: ${noteFilenameFormat(kind)}. Пример: 2026-W48.`,
+          `Year-week: ${noteFilenameFormat(kind)}. Example: 2026-W48.`
         )
         : kind === "monthly" ? t(
-          "Формат YYYY-MM использует год и месяц, например 2026-11.",
-          "The YYYY-MM format uses the year and month, for example 2026-11."
+          `Год-месяц: ${noteFilenameFormat(kind)}. Пример: 2026-11.`,
+          `Year-month: ${noteFilenameFormat(kind)}. Example: 2026-11.`
         ) : t(
-          "Фиксированный формат YYYY-MM-DD предотвращает совпадение дат разных лет.",
-          "The fixed YYYY-MM-DD format prevents dates from different years from colliding."
+          `Год-месяц-день: ${noteFilenameFormat(kind)}. Пример: 2026-11-23.`,
+          `Year-month-day: ${noteFilenameFormat(kind)}. Example: 2026-11-23.`
         ));
     new Setting(body).setName(kind === "daily" ? t("Шаблон по умолчанию", "Default template") : t("Шаблон", "Template")).setDesc(t("Путь к Markdown-файлу. Оставьте поле пустым, чтобы не применять шаблон.", "Path to a Markdown file. Leave empty to use no template.")).addText((text) => {
       text.setPlaceholder(t("Начните вводить имя файла…", "Start typing a filename…")).setValue(config.template).onChange((value) => {

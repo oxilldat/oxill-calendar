@@ -45,18 +45,23 @@ export function noteDate(
   return date.clone();
 }
 
+export function noteFilenameFormat(kind: NoteKind): string {
+  if (kind === "weekly") return "GGGG-[W]WW";
+  if (kind === "monthly") return "YYYY-MM";
+  return "YYYY-MM-DD";
+}
+
 function noteTitle(
   settings: OxillCalendarSettings,
   kind: NoteKind,
   date: Moment
 ): string {
   const normalizedDate = noteDate(settings, kind, date).locale("ru");
-  if (kind === "daily") return normalizedDate.format("YYYY-MM-DD");
-  if (kind === "monthly") return normalizedDate.format("YYYY-MM");
+  if (kind !== "weekly") return normalizedDate.format(noteFilenameFormat(kind));
   const weekDate = settings.weekStartsOn === "sunday"
     ? normalizedDate.clone().add(1, "day")
     : normalizedDate;
-  return weekDate.format("GGGG-[W]WW");
+  return weekDate.format(noteFilenameFormat(kind));
 }
 
 export function getNotePath(

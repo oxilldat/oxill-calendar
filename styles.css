@@ -1294,6 +1294,14 @@
   gap: 5px;
 }
 
+.oxill-calendar-work-period-actions .oxill-calendar-work-period-toggle {
+  height: var(--clickable-icon-size);
+  justify-content: center;
+  min-height: 0;
+  padding: var(--clickable-icon-padding);
+  width: var(--clickable-icon-size);
+}
+
 .oxill-calendar-work-period-save {
   padding-inline: 12px;
 }
